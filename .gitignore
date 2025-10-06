@@ -1,3 +1,7 @@
 JTAG_support_for_Gecko5Education
 
 builddir_ork1sim
+src/oss-cad-suite
+src/openocd
+src/or1200
+src/adv_debug_sys

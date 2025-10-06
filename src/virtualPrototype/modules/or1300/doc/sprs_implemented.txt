@@ -1,0 +1,184 @@
+Current implemented SPRs are:
+
+GROUP 0:
+    0 Version Register (R)
+    1 Unit Present Register (R)
+    2 CPU Configuration Register (R)
+    5 Data Cache Configuration Register (R/W)
+    6 Instruction Cache Configuration Register (R/W)
+    9 Processor Identification Register (R)
+   17 Supervision Register
+   18 Exception Index
+32-47 EPCR0-EPCR15
+48-63 EEAR0-EEAR15
+64-79 ESR0-ESR15
+   80 Instruction that cought an exception
+1024-
+1535  GPR mappped to SPR space 
+
+CHANGES TO THE DCCR AND ICCR:
+Bit:
+  1..0 -> Number of cache ways. Valid values are 0,1 and 2 for:
+          0     -> direct mapped
+          1     -> 2-ways
+          2     -> 4-ways
+         These bits can only be written in case that the cache is disabled!
+ 14..2 -> Read only bits as mentioned in the specs
+17..16 -> Replacement policy bits. Valid values are 0,1 and 2 for:
+          0     -> FIFO
+          1     -> PLRU
+          2     -> LRU
+    18 -> Coherency enable bit. If set the coherency protocol is activated,
+          if cleared the caches act as none-coherent caches.
+    19 -> Cache is enabled (read only)
+    20 -> MESI protocol (1) or MSI protocol (0) (D$ only)
+    21 -> Enable(1)/Disable(0 [default]) snarfing (D$ only)
+    29 -> Flush Cache when 1 (Write only)
+31..30 -> Cache size. Valid values are:
+          0     ->  1 kbyte cache
+          1     ->  2 kbyte cache
+          2     ->  4 kbyte cache
+          3     ->  8 kbyte cache [default]
+IMPORTANT NOTE: If bit 29 is written with a '1' all other bits are treated as
+don't care, hence the DCCR and ICCR are NOT changed, only a flush is performed!
+        
+GROUP 5:
+    1 MAC lo register
+    2 MAC hi register
+
+GROUP 9:
+    0 PIC Mask register
+    2 PIC Status register
+
+GROUP 10:
+    0 TTMR tick timer mode register
+    1 TTCR tick timer count register
+    2 Hardware barrier reg:
+      bit 0     : Read/Write my barier value
+      bit 15..8 : Read Only all barier values
+      bit 31    : Processor enabled flag
+      others    : Zero
+    3 Jump address reg (read only).
+    4 Multi processor status reg (write only by processor 1):
+      bit     0  : Don't care
+      bit  7..1  : processor enable(1)/disable(0) bit of processor 8..2
+      bit 15..8  : Profiling enable bits for processors 8..1
+      bit 31..16 : cache configuration reg for all processors (see below).
+    4 Read cache configuration reg (read only for all processors):
+      bit 15     : Use(1)/Don't Use(0) write through
+      bit 14     : Use(1)/Don't Use(0) D$ snarfing
+      bit 13     : Use MESI(1)/Use MSI(0) coherence states for D$
+      bit 12     : Use(1)/Don't Use(0) D$ coherence
+      bit 11..10 : 00 -> 1k byte D$
+                   01 -> 2k byte D$
+                   10 -> 4k byte D$
+                   11 -> 8k byte D$
+      bit  9.. 8 : 00 -> Fifo D$ replacement
+                   01 -> PLRU D$ replacement
+                   10 -> LRU  D$ replacement
+                   11 -> LRU  D$ replacement
+      bit  7.. 6 : 00 -> Direct mapped D$
+                   01 -> 2 way s.a. D$
+                   10 -> 4 wav s.a. D$
+                   11 -> D$ off
+      bit  5.. 4 : 00 -> 1k byte I$
+                   01 -> 2k byte I$
+                   10 -> 4k byte I$
+                   11 -> 8k byte I$
+      bit  3.. 2 : 00 -> Fifo I$ replacement
+                   01 -> PLRU I$ replacement
+                   10 -> LRU  I$ replacement
+                   11 -> LRU  I$ replacement
+      bit  1.. 0 : 00 -> Direct mapped I$
+                   01 -> 2 way s.a. I$
+                   10 -> 4 wav s.a. I$
+                   11 -> I$ off
+      others     : Zero
+    5 Write: No Function
+    5 Read: Read stack top pointer
+    8 Processor 1 jump address (write only by processor 1) [default 0x100]
+    9 Processor 2 jump address (write only by processor 1) [default 0x100]
+    A Processor 3 jump address (write only by processor 1) [default 0x100]
+    B Processor 4 jump address (write only by processor 1) [default 0x100]
+    C Processor 5 jump address (write only by processor 1) [default 0x100]
+    D Processor 6 jump address (write only by processor 1) [default 0x100]
+    E Processor 7 jump address (write only by processor 1) [default 0x100]
+    F Processor 8 jump address (write only by processor 1) [default 0x100]
+   10 Processor 1 individual cache configuration (write only by processor 1) 
+      [see cache configuration reg bits 31..16 are don't care]
+   11 Processor 2 individual cache configuration (write only by processor 1) 
+      [see cache configuration reg bits 31..16 are don't care]
+   12 Processor 3 individual cache configuration (write only by processor 1) 
+      [see cache configuration reg bits 31..16 are don't care]
+   13 Processor 4 individual cache configuration (write only by processor 1) 
+      [see cache configuration reg bits 31..16 are don't care]
+   14 Processor 5 individual cache configuration (write only by processor 1) 
+      [see cache configuration reg bits 31..16 are don't care]
+   15 Processor 6 individual cache configuration (write only by processor 1) 
+      [see cache configuration reg bits 31..16 are don't care]
+   16 Processor 7 individual cache configuration (write only by processor 1) 
+      [see cache configuration reg bits 31..16 are don't care]
+   17 Processor 8 individual cache configuration (write only by processor 1) 
+      [see cache configuration reg bits 31..16 are don't care]
+   20 Processor 1 Stack Top Value (write only by processor 1) [default SPM]
+   21 Processor 2 Stack Top Value (write only by processor 1) [default SPM]
+   22 Processor 3 Stack Top Value (write only by processor 1) [default SPM]
+   23 Processor 4 Stack Top Value (write only by processor 1) [default SPM]
+   24 Processor 5 Stack Top Value (write only by processor 1) [default SPM]
+   25 Processor 6 Stack Top Value (write only by processor 1) [default SPM]
+   26 Processor 7 Stack Top Value (write only by processor 1) [default SPM]
+   27 Processor 8 Stack Top Value (write only by processor 1) [default SPM]
+      
+
+
+GROUP 27:
+    0 Memory distance value (default = 0 => as fast as possible)
+
+GROUP 28:
+    0  Bus error exception vector                                   0xF0000008
+    1  Data page fault exception vector         (not implemented)   0xF0000010
+    2  Instruction page fault exception vector  (not implemented)   0xF0000018
+    3  Tick timer interrupt exception vector                        0xF0000020
+    4  Allignment exception vector                                  0xF0000028
+    5  Illegal instruction exception vector                         0xF0000030
+    6  external Interrupt exception vector                          0xF0000038
+    7  Dtlb miss exception vector               (not implemented)   0xF0000040
+    8  Itlb miss exception vector               (not implemented)   0xF0000048
+    9  Range exception vector                                       0xF0000050
+    10 System call exception vector                                 0xF0000058
+    11 Trap call exception vector                                   0xF0000060
+    12 Breakpoint exception vector                                  0xF0000068
+    13 Reset Vector                             (fix)               0xF0000070
+    14 Perform a software CPU reset (note this will only reset the CPU, not the rest of the system) when any value is written, also in user mode.
+    15 Soft Bios (setting this bit will swap the rom and ram locations)
+
+GROUP 31:
+    0 PMODE Profiling Mode Register
+    1 PCM0 Profiling Count Mask 0
+    2 PCM1 Profiling Count Mask 1
+    3 PCM2 Profiling Count Mask 2
+    4 PCM3 Profiling Count Mask 3
+    5 PCM4 Profiling Count Mask 4
+    6 PCM5 Profiling Count Mask 5
+    7 PCM6 Profiling Count Mask 6
+    8 PCM7 Profiling Count Mask 7
+    9 Nr. of processor cycles lo
+   10 Nr. of processor cycles hi
+   11 PCM0 Counter value lo
+   12 PCM0 Counter value hi
+   13 PCM1 Counter value lo
+   14 PCM1 Counter value hi
+   15 PCM2 Counter value lo
+   16 PCM2 Counter value hi
+   17 PCM3 Counter value lo
+   18 PCM3 Counter value hi
+   19 PCM4 Counter value lo
+   20 PCM4 Counter value hi
+   21 PCM5 Counter value lo
+   22 PCM5 Counter value hi
+   23 PCM6 Counter value lo
+   24 PCM6 Counter value hi
+   25 PCM7 Counter value lo
+   26 PCM7 Counter value hi
+   27 Nr. of cycles between start and stop lo
+   28 Nr. of cycles between start and stop hi
