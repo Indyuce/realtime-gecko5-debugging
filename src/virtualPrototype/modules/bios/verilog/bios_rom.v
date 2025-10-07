@@ -1,1 +1,0 @@
-../sandbox/bios_rom.v
