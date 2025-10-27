@@ -1,4 +1,7 @@
-JTAG_support_for_Gecko5Education
+
+singleCore/sandbox/*
+
+test/*.vcd
 
 builddir_ork1sim
 src/oss-cad-suite
