@@ -1,8 +1,6 @@
 
 singleCore/sandbox/*
 
-test/*.vcd
-
 builddir_ork1sim
 src/oss-cad-suite
 src/openocd
