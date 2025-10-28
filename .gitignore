@@ -6,3 +6,8 @@ src/oss-cad-suite
 src/openocd
 src/or1200
 src/adv_debug_sys
+
+
+JTAG_support_for_Gecko5Education
+src/or1ksim/or1ksim
+
