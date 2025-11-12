@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "1) OpenOCD Debug",
+      "type": "shell",
+      "command": "bash",
+      "options": {
+        "cwd": "${workspaceFolder}/JTAG_support_for_Gecko5Education/project/scripts"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "2) Synthesize FPGA",
+      "type": "shell",
+      "command": "bash",
+      "options": {
+        "cwd": "${workspaceFolder}/JTAG_support_for_Gecko5Education/project/systems/singleCore/sandbox"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "3) Testbench",
+      "type": "shell",
+      "command": "bash",
+      "options": {
+        "cwd": "${workspaceFolder}/JTAG_support_for_Gecko5Education/project/modules/jtag/test"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
