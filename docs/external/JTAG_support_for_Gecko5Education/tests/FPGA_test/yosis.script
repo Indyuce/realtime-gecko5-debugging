@@ -1,0 +1,2 @@
+read -sv test_button_light.v
+synth_ecp5 -top button_led -json test_button_light.json

@@ -1,0 +1,25 @@
+#! /Users/antoinecolson/cours/EPFL/MA2/Project/oss-cad-suite/bin/vvp
+:ivl_version "13.0 (devel)" "(s20250103-25-g99580cd05)";
+:ivl_delay_selection "TYPICAL";
+:vpi_time_precision + 0;
+:vpi_module "/Users/antoinecolson/cours/EPFL/MA2/Project/oss-cad-suite/lib/ivl/system.vpi";
+:vpi_module "/Users/antoinecolson/cours/EPFL/MA2/Project/oss-cad-suite/lib/ivl/vhdl_sys.vpi";
+:vpi_module "/Users/antoinecolson/cours/EPFL/MA2/Project/oss-cad-suite/lib/ivl/vhdl_textio.vpi";
+:vpi_module "/Users/antoinecolson/cours/EPFL/MA2/Project/oss-cad-suite/lib/ivl/v2005_math.vpi";
+:vpi_module "/Users/antoinecolson/cours/EPFL/MA2/Project/oss-cad-suite/lib/ivl/va_math.vpi";
+S_0x7fbe73f052d0 .scope module, "button_led" "button_led" 2 1;
+ .timescale 0 0;
+    .port_info 0 /INPUT 1 "button";
+    .port_info 1 /OUTPUT 3 "led";
+    .port_info 2 /OUTPUT 4 "RGB_Column";
+L_0x7fbe74863050 .functor BUFT 1, C4<0000>, C4<0>, C4<0>, C4<0>;
+v0x600001de4240_0 .net "RGB_Column", 3 0, L_0x7fbe74863050;  1 drivers
+o0x7fbe74832038 .functor BUFZ 1, c4<z>; HiZ drive
+v0x600001de42d0_0 .net "button", 0 0, o0x7fbe74832038;  0 drivers
+L_0x7fbe74863008 .functor BUFT 1, C4<001>, C4<0>, C4<0>, C4<0>;
+v0x600001de4360_0 .net "led", 2 0, L_0x7fbe74863008;  1 drivers
+# The file index is used to find the file name in the following table.
+:file_names 3;
+    "N/A";
+    "<interactive>";
+    "test_button_light.v";

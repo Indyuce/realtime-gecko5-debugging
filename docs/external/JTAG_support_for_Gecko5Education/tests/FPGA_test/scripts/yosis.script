@@ -1,0 +1,2 @@
+read_verilog -sv ../test_button_light.v
+synth_ecp5 -top button_led -json button_led.json

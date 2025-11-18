@@ -6,7 +6,7 @@
       "type": "shell",
       "command": "bash",
       "options": {
-        "cwd": "${workspaceFolder}/JTAG_support_for_Gecko5Education/project/scripts"
+        "cwd": "${workspaceFolder}/src/vp/scripts"
       },
       "runOptions": {
         "runOn": "folderOpen"
@@ -18,7 +18,7 @@
       "type": "shell",
       "command": "bash",
       "options": {
-        "cwd": "${workspaceFolder}/JTAG_support_for_Gecko5Education/project/systems/singleCore/sandbox"
+        "cwd": "${workspaceFolder}/src/vp/systems/singleCore/sandbox"
       },
       "runOptions": {
         "runOn": "folderOpen"
@@ -30,7 +30,7 @@
       "type": "shell",
       "command": "bash",
       "options": {
-        "cwd": "${workspaceFolder}/JTAG_support_for_Gecko5Education/project/modules/jtag/test"
+        "cwd": "${workspaceFolder}/src/vp/modules/jtag/test"
       },
       "runOptions": {
         "runOn": "folderOpen"

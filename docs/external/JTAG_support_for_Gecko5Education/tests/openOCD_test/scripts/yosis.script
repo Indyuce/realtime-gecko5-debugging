@@ -1,0 +1,2 @@
+read_verilog -sv ../test_module.v
+synth_ecp5 -top test_module -json test_module.json

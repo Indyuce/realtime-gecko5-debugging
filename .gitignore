@@ -6,6 +6,21 @@ src/or1200
 src/adv_debug_sys
 
 
-JTAG_support_for_Gecko5Education
 src/or1ksim/or1ksim
 
+convert_or32
+toolchain
+oss-cad-suite
+ressources
+.DS_Store
+build-release
+*.o
+project/scripts/config.cfg
+
+*.vcd
+run_testbench
+
+or1420SingleCore.bit
+or1420SingleCore.config
+or1420SingleCore.json
+yosys.log
