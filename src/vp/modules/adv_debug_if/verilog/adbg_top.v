@@ -157,7 +157,8 @@ always @(posedge tck_i) begin
   shift_dr_i_patch <= shift_dr_i;
 end
 
-assign red   = ~( {  8'b0, module_id_reg  });
+assign red[3:0] = ~module_selects;
+assign red[9:4] = 6'b111111;
 assign green = ~(10'b0);
 assign blue  = ~(10'b0);
 
@@ -199,11 +200,15 @@ begin
     module_id_reg <= module_id_in;
 end
 
-
+// no two assignments in a row !! problem with verilog !!
 always @ (module_id_reg)
 begin
-	module_selects <= `DBG_TOP_MODULE_ID_LENGTH'h0;
-	module_selects[module_id_reg] <= 1'b1;
+  case (module_id_reg)
+    2'b00   : module_selects <= 4'b0001;
+    2'b01   : module_selects <= 4'b0010;
+    2'b10   : module_selects <= 4'b0100;
+    default : module_selects <= 4'b1000;
+  endcase;
 end
 
 ///////////////////////////////////////////////
