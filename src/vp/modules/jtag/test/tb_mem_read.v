@@ -18,9 +18,24 @@ module tb_mem_read;
     reg sys_clk;
     reg sys_reset;
 
-    reg sys_wb_ack = 0;
-    reg [31:0] sys_wb_dat_i = 32'd0;
-    reg sys_wb_err = 0;
+    ////////////////////////
+    // Emulated bus signals
+    ////////////////////////
+
+    // ADBG BIU signals
+    wire        sb_end_transaction_adbg;
+    wire [31:0] sb_address_data_adbg;
+
+    // Slave (emulated sdram) signals
+    reg        sb_end_transaction_slave = 0;
+    reg [31:0] sb_address_data_slave = 32'd0;
+    reg        sb_error_slave = 0;
+
+    // OR'd signals
+    wire [31:0] sb_address_data = sb_address_data_slave | sb_address_data_adbg;
+    wire sb_end_transaction     = sb_end_transaction_slave | sb_end_transaction_adbg;
+    wire sb_error               = sb_error_slave;
+    wire sb_reset               = 1'b0; // unused (for jsp server only. not sure what this does)
 
     localparam drlen = 53'd8;
 
@@ -34,11 +49,14 @@ module tb_mem_read;
         .TDI(TDI),
         .TDO(TDO),
 
-        .system_clock(sys_clk),
-        .system_reset(sys_reset),
-        .wb_ack_i(sys_wb_ack),
-        .wb_dat_i(sys_wb_dat_i),
-        .wb_err_i(sys_wb_err)
+        .sb_clock_i(sys_clk),
+        .sb_reset_i(sys_reset),
+        .sb_end_transaction_i(sb_end_transaction),
+        .sb_address_data_i(sb_address_data),
+        .sb_error_i(sb_error),
+
+        .sb_end_transaction_o(sb_end_transaction_adbg),
+        .sb_address_data_o(sb_address_data_adbg)
     );
 
     // Clock generation : 4ns period
@@ -183,12 +201,11 @@ module tb_mem_read;
         repeat(8) @(posedge sys_clk); // Idle
 
         @(posedge sys_clk);
-        sys_wb_ack   = 1'b1;
-        sys_wb_dat_i = 32'hDEAD_BEEF;
+        sb_end_transaction_slave   = 1'b1;
+        sb_address_data_slave = 32'hDEAD_BEEF;
         @(posedge sys_clk);
-        sys_wb_ack   = 1'b0;
-        sys_wb_dat_i = 32'h0000_0000;
-
+        sb_end_transaction_slave   = 1'b0;
+        sb_address_data_slave = 32'h0000_0000;
 
 
         repeat(20) @(posedge TCK); // Idle

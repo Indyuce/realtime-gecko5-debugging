@@ -13,27 +13,21 @@ module jtag_if (
     output [9:0] green,
     output [9:0] blue,
 
-    // Bus signals (unused atm)
-    input wire system_clock,
-    input wire system_reset,
-    output wire [31:0] address_dataOUT,
-    output wire [3:0] byte_enablesOUT,
-    output wire [7:0] burstSizeOUT,
-    output wire read_n_writeOUT,
-    output wire begin_transactionOUT,
-    output wire end_transactionOUT,
-    output wire data_validOUT,
-    output wire busyOUT,
-    input wire [31:0] address_dataIN,
-    input wire end_transactionIN,
-    input wire data_validIN,
-    input wire busyIN,
-    input wire errorIN,
-
-
-    input wire [31:0] wb_dat_i,
-    input wire        wb_ack_i,
-    input wire        wb_err_i
+    // System bus signals
+    input wire         sb_clock_i,
+    input wire         sb_reset_i,
+    output wire [31:0] sb_address_data_o,
+    output wire [3:0]  sb_byte_enables_o,
+    output wire [7:0]  sb_burst_size_o,
+    output wire        sb_read_n_write_o,
+    output wire        sb_begin_transaction_o,
+    output wire        sb_end_transaction_o,
+    output wire        sb_data_valid_o,
+    input wire [31:0]  sb_address_data_i,
+    input wire         sb_end_transaction_i,
+    input wire         sb_data_valid_i,
+    input wire         sb_busy_i,
+    input wire         sb_error_i
 );
 
     ///////////////////////////////////////////////////////////////////////
@@ -139,6 +133,9 @@ module jtag_if (
     //
     ///////////////////////////////////////////////////////////////////////
 
+    assign sb_end_transaction_o = 1'b0; // unused TODO
+    assign sb_address_data_o   = 32'd0; // unused TODO 
+
     adbg_top #(
         .DBG_CPU0_SUPPORTED("NONE"), // TODO
         .DBG_CPU1_SUPPORTED("NONE"), // TODO
@@ -160,11 +157,20 @@ module jtag_if (
         .green(green),
         .blue(blue),
 
-        .wb_clk_i(system_clock),
-        .wb_rst_i(system_reset),
-        .wb_ack_i(wb_ack_i),
-        .wb_dat_i(wb_dat_i),
-        .wb_err_i(1'b0)
+        .sb_clock_i(sb_clock_i),
+        .sb_reset_i(sb_reset_i),
+        .sb_address_data_o(sb_address_data_o),
+        .sb_byte_enables_o(sb_byte_enables_o),
+        .sb_burst_size_o(sb_burst_size_o),
+        .sb_read_n_write_o(sb_read_n_write_o),
+        .sb_begin_transaction_o(sb_begin_transaction_o),
+        .sb_end_transaction_o(sb_end_transaction_o),
+        .sb_data_valid_o(sb_data_valid_o),
+        .sb_address_data_i(sb_address_data_i),
+        .sb_end_transaction_i(sb_end_transaction_i),
+        .sb_data_valid_i(sb_data_valid_i),
+        .sb_busy_i(sb_busy_i),
+        .sb_error_i(sb_error_i)
 
 /*
     //input   wb_clk_i,

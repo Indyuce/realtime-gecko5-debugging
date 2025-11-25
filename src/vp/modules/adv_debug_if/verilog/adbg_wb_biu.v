@@ -78,7 +78,23 @@ module adbg_wb_biu
    err_o,
    word_size_i,  // 1,2, or 4
 
+   // System bus signals
+  sb_clock_i,
+  sb_address_data_o,
+  sb_byte_enables_o,
+  sb_burst_size_o,
+  sb_read_n_write_o,
+  sb_begin_transaction_o,
+  sb_end_transaction_o,
+  sb_data_valid_o,
+  sb_address_data_i,
+  sb_end_transaction_i,
+  sb_data_valid_i,
+  sb_busy_i,
+  sb_error_i
+
    // Wishbone signals
+   /*
    wb_clk_i,
    wb_adr_o,
    wb_dat_o,
@@ -92,6 +108,7 @@ module adbg_wb_biu
    wb_err_i,
    wb_cti_o,
    wb_bte_o
+   */
    );
 
    // Debug interface signals
@@ -106,7 +123,23 @@ module adbg_wb_biu
    output 	 err_o;
    input [2:0] 	 word_size_i;
 
+  // System bus signals
+  input 	       sb_clock_i;
+	output  [31:0] sb_address_data_o;
+	output  [3:0]  sb_byte_enables_o;
+	output  [7:0]  sb_burst_size_o;
+	output         sb_read_n_write_o;
+	output         sb_begin_transaction_o;
+	output         sb_end_transaction_o;
+	output         sb_data_valid_o;
+	input  [31:0]  sb_address_data_i;
+	input          sb_end_transaction_i;
+	input          sb_data_valid_i;
+	input          sb_busy_i;
+	input          sb_error_i;
+
    // Wishbone signals
+   /*
    input 	 wb_clk_i;
    output [31:0] wb_adr_o;
    output [31:0] wb_dat_o;
@@ -120,11 +153,21 @@ module adbg_wb_biu
    input 	 wb_err_i;
    output [2:0]  wb_cti_o;
    output [1:0]  wb_bte_o;
+   */
 
    wire [31:0] 	 data_o;
    reg 		 rdy_o;
    wire 	 err_o;
 
+  // TODO regs or wires?
+  reg [31:0]       sb_address_data_o; // TODO 
+  reg [3:0]        sb_byte_enables_o; // TODO
+  reg [7:0]        sb_burst_size_o; // TODO
+  reg              sb_begin_transaction_o; // TODO
+  reg              sb_end_transaction_o; // TODO
+  reg              sb_data_valid_o; // TODO
+
+  /*
    wire [31:0] 	 wb_adr_o;
    reg 		 wb_cyc_o;
    reg 		 wb_stb_o;
@@ -134,7 +177,7 @@ module adbg_wb_biu
    wire 	 wb_cab_o;
    wire [2:0] 	 wb_cti_o;
    wire [1:0] 	 wb_bte_o;
-
+   */
 
    // Registers
    reg [3:0] 	 sel_reg;
@@ -265,27 +308,28 @@ module adbg_wb_biu
 
    // Create rdy_o output.  Set on reset, clear on strobe (if set), set on input toggle
    always @ (posedge tck_i or posedge rst_i)
-     begin
-	if(rst_i) begin
-           rdy_sync_tff1 <= 1'b0;
-           rdy_sync_tff2 <= 1'b0;
-           rdy_sync_tff2q <= 1'b0;
-           rdy_o <= 1'b1; 
-	end
-	else begin  
-	   rdy_sync_tff1 <= rdy_sync;       // Synchronize the ready signal across clock domains
-	   rdy_sync_tff2 <= rdy_sync_tff1;
-	   rdy_sync_tff2q <= rdy_sync_tff2;  // used to detect toggles
+    begin
+	    if(rst_i) begin
+        rdy_sync_tff1 <= 1'b0;
+        rdy_sync_tff2 <= 1'b0;
+        rdy_sync_tff2q <= 1'b0;
+        rdy_o <= 1'b1; 
+      end
+      else begin  
+        rdy_sync_tff1 <= rdy_sync;       // Synchronize the ready signal across clock domains
+        rdy_sync_tff2 <= rdy_sync_tff1;
+        rdy_sync_tff2q <= rdy_sync_tff2;  // used to detect toggles
 
-	   if(strobe_i && rdy_o) rdy_o <= 1'b0;
-	   else if(rdy_sync_tff2 != rdy_sync_tff2q) rdy_o <= 1'b1;
-	end
+        if(strobe_i && rdy_o) rdy_o <= 1'b0;
+        else if(rdy_sync_tff2 != rdy_sync_tff2q) rdy_o <= 1'b1;
+      end
 
-     end 
+    end 
 
    //////////////////////////////////////////////////////////
    // Direct assignments, unsynchronized
 
+/*
    assign wb_dat_o = data_in_reg;
    assign wb_we_o = wr_reg;
    assign wb_adr_o = addr_reg;
@@ -297,12 +341,15 @@ module adbg_wb_biu
    assign wb_cti_o = 3'h0;
    assign wb_bte_o = 2'h0;
    assign wb_cab_o = 1'b0;
+*/
+
+   assign sb_read_n_write_o = ~wr_reg; // read_not_write active when reading, wr_reg active when writing, hence the ~
 
    ///////////////////////////////////////////////////////
    // Wishbone clock domain
 
     // synchronize the start strobe
-    always @ (posedge wb_clk_i or posedge rst_i)
+    always @ (posedge sb_clock_i or posedge rst_i)
 	  begin
 	     if(rst_i) begin
 		str_sync_wbff1 <= 1'b0;
@@ -319,10 +366,10 @@ module adbg_wb_biu
    assign start_toggle = (str_sync_wbff2 != str_sync_wbff2q);
 
    // Error indicator register
-   always @ (posedge wb_clk_i or posedge rst_i)
+   always @ (posedge sb_clock_i or posedge rst_i)
      begin
 	if(rst_i) err_reg <= 1'b0;
-	else if(err_en) err_reg <= wb_err_i; 
+	else if(err_en) err_reg <= sb_error_i; 
      end
 
    // Byte- or word-swap the WB->dbg data, as necessary (combinatorial)
@@ -343,14 +390,14 @@ module adbg_wb_biu
      end
 
    // WB->dbg data register
-   always @ (posedge wb_clk_i or posedge rst_i)
+   always @ (posedge sb_clock_i or posedge rst_i)
      begin
 	if(rst_i) data_out_reg <= 32'h0;
 	else if(data_o_en) data_out_reg <= swapped_data_out;
      end
 
    // Create a toggle-active ready signal to send to the TCK domain
-   always @ (posedge wb_clk_i or posedge rst_i)
+   always @ (posedge sb_clock_i or posedge rst_i)
      begin
 	if(rst_i) rdy_sync <= 1'b0;
 	else if(rdy_sync_en) rdy_sync <= ~rdy_sync;
@@ -369,24 +416,24 @@ module adbg_wb_biu
 `define STATE_TRANSFER 1'h1
 
    // Sequential bit
-   always @ (posedge wb_clk_i or posedge rst_i)
+   always @ (posedge sb_clock_i or posedge rst_i)
      begin
 	if(rst_i) wb_fsm_state <= `STATE_IDLE;
 	else wb_fsm_state <= next_fsm_state; 
      end
 
    // Determination of next state (combinatorial)
-   always @ (wb_fsm_state or start_toggle or wb_ack_i or wb_err_i)
+   always @ (wb_fsm_state or start_toggle or wb_ack_i or sb_error_i)
      begin
 	case (wb_fsm_state)
           `STATE_IDLE:
             begin
-               if(start_toggle && !(wb_ack_i || wb_err_i)) next_fsm_state <= `STATE_TRANSFER;  // Don't go to next state for 1-cycle transfer
+               if(start_toggle && !(wb_ack_i || sb_error_i)) next_fsm_state <= `STATE_TRANSFER;  // Don't go to next state for 1-cycle transfer
                else next_fsm_state <= `STATE_IDLE;
             end
           `STATE_TRANSFER:
             begin
-               if(wb_ack_i || wb_err_i) next_fsm_state <= `STATE_IDLE;
+               if(wb_ack_i || sb_error_i) next_fsm_state <= `STATE_IDLE;
                else next_fsm_state <= `STATE_TRANSFER;
             end
 	endcase
@@ -394,7 +441,7 @@ module adbg_wb_biu
 
    // Outputs of state machine (combinatorial)
    // TODO !!!! fix double assignments !!!!
-   always @ (wb_fsm_state or start_toggle or wb_ack_i or wb_err_i or wr_reg)
+   always @ (wb_fsm_state or start_toggle or wb_ack_i or sb_error_i or wr_reg)
      begin
 	rdy_sync_en <= 1'b0;
 	err_en <= 1'b0;
@@ -408,7 +455,7 @@ module adbg_wb_biu
                if(start_toggle) begin
 		  wb_cyc_o <= 1'b1;
 		  wb_stb_o <= 1'b1;
-		  if(wb_ack_i || wb_err_i) begin
+		  if(wb_ack_i || sb_error_i) begin
                      err_en <= 1'b1;
                      rdy_sync_en <= 1'b1;
 		  end
@@ -428,7 +475,7 @@ module adbg_wb_biu
                   data_o_en <= 1'b1;
                   rdy_sync_en <= 1'b1;
                end
-               else if (wb_err_i) begin
+               else if (sb_error_i) begin
                   err_en <= 1'b1;
                   rdy_sync_en <= 1'b1;
                end
