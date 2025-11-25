@@ -589,6 +589,7 @@ module adbg_wb_module #(
 
 
    // Outputs of state machine, pure combinatorial
+   // TODO !!!! fix double assignments !!!!
    always @ (module_state or module_next_state or module_select_i or update_dr_i or capture_dr_i or shift_dr_i or operation_in[2]
 	     or word_count_zero or bit_count_max or data_register_i[52] or biu_ready or intreg_instruction or module_cmd 
 	     or intreg_write or decremented_word_count)

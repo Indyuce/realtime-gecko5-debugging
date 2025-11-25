@@ -242,7 +242,7 @@ generate
 
                   // TAP states
                   .capture_dr_i     (capture_dr_i),
-                  .shift_dr_i       (shift_dr_patched), // [patch] shift_dr_i -> shift_dr_patched
+                  .shift_dr_i       (shift_dr_i_patch), // [patch] shift_dr_i -> shift_dr_i_patch
                   .update_dr_i      (update_dr_i),
 
                   .data_register_i  (input_shift_reg),
@@ -283,7 +283,7 @@ generate
 
                   // TAP states
                   .capture_dr_i     (capture_dr_i),
-                  .shift_dr_i       (shift_dr_patched), // [patch] shift_dr_i -> shift_dr_patched
+                  .shift_dr_i       (shift_dr_i_patch), // [patch] shift_dr_i -> shift_dr_i_patch
                   .update_dr_i      (update_dr_i),
 
                   .data_register_i  (input_shift_reg),
@@ -321,7 +321,7 @@ generate
 
                   // TAP states
                   .capture_dr_i     (capture_dr_i),
-                  .shift_dr_i       (shift_dr_patched), // [patch] shift_dr_i -> shift_dr_patched
+                  .shift_dr_i       (shift_dr_i_patch), // [patch] shift_dr_i -> shift_dr_i_patch
                   .update_dr_i      (update_dr_i),
 
                   .data_register_i  (input_shift_reg),
@@ -344,7 +344,7 @@ generate
    end
    else
    begin
-      assign tdo_cpu1 = 1'b1; // CHANGED !!!!!!!!!!!! for debug
+      assign tdo_cpu1 = 1'b0;
       assign module_inhibit[`DBG_TOP_CPU1_DEBUG_MODULE] = 1'b0;
    end
 
@@ -359,7 +359,7 @@ generate
 
                   // TAP states
                   .capture_dr_i     (capture_dr_i),
-                  .shift_dr_i       (shift_dr_patched), // [patch] shift_dr_i -> shift_dr_patched
+                  .shift_dr_i       (shift_dr_i_patch), // [patch] shift_dr_i -> shift_dr_i_patch
                   .update_dr_i      (update_dr_i),
 
                   .data_register_i  (input_shift_reg),

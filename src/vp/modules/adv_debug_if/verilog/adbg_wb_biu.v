@@ -393,6 +393,7 @@ module adbg_wb_biu
      end
 
    // Outputs of state machine (combinatorial)
+   // TODO !!!! fix double assignments !!!!
    always @ (wb_fsm_state or start_toggle or wb_ack_i or wb_err_i or wr_reg)
      begin
 	rdy_sync_en <= 1'b0;

@@ -137,7 +137,6 @@ module jtag_if (
     adbg_top #(
         .DBG_CPU0_SUPPORTED("NONE"), // TODO
         .DBG_CPU1_SUPPORTED("NONE"), // TODO
-        .DBG_WISHBONE_SUPPORTED("NONE"), // TODO first.
         .DBG_JSP_SUPPORTED("NONE")
     ) adbg_top_impl (
 
@@ -150,12 +149,15 @@ module jtag_if (
         .pause_dr_i(1'b0),
         .update_dr_i(s_JUPDATE),
         .capture_dr_i(s_JCAPTURE),
+        .debug_select_i(s_selectAdbg),
 
         .red(red),
         .green(green),
         .blue(blue),
 
-        .debug_select_i(s_selectAdbg)
+        .wb_clk_i(system_clock),
+        .wb_rst_i(system_reset)
+
 /*
     input   wb_clk_i,
     input   wb_rst_i,
