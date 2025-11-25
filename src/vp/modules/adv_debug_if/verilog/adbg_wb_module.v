@@ -91,6 +91,8 @@ module adbg_wb_module #(
 
 					   // SYSTEM BUS common signals
 					   sb_clock_i,
+					   sb_grant_i,
+					   sb_request_o,
 
 					   // SYSTEM BUS master interface
 					   sb_address_data_o, sb_byte_enables_o, sb_burst_size_o, sb_read_n_write_o,
@@ -115,6 +117,8 @@ module adbg_wb_module #(
 
    // SYSTEM BUS master interface
     input 	       sb_clock_i;
+	input          sb_grant_i;
+	output         sb_request_o;
 	output  [31:0] sb_address_data_o;
 	output  [3:0]  sb_byte_enables_o;
 	output  [7:0]  sb_burst_size_o;
@@ -450,6 +454,8 @@ module adbg_wb_module #(
 
 	  // System bus signals
 	  .sb_clock_i             (sb_clock_i),
+	  .sb_grant_i             (sb_grant_i),
+	  .sb_request_o		      (sb_request_o),
 	  .sb_address_data_o      (sb_address_data_o),
 	  .sb_byte_enables_o      (sb_byte_enables_o),
 	  .sb_burst_size_o        (sb_burst_size_o),

@@ -38,7 +38,7 @@
       "problemMatcher": []
     },
     {
-      "label": "3) Telnet",
+      "label": "4) Telnet",
       "type": "shell",
       "command": "bash",
       "options": {

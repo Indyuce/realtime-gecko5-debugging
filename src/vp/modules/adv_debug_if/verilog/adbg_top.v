@@ -80,6 +80,8 @@ module adbg_top
     // System bus signals
     input wire         sb_clock_i,
     input wire         sb_reset_i,
+    input wire         sb_grant_i,
+    output wire        sb_request_o,
     output wire [31:0] sb_address_data_o,
     output wire [3:0]  sb_byte_enables_o,
     output wire [7:0]  sb_burst_size_o,
@@ -270,6 +272,8 @@ generate
 
                   // SYSTEM BUS common signals
                   .sb_clock_i        (sb_clock_i),
+                  .sb_grant_i        (sb_grant_i),
+                  .sb_request_o      (sb_request_o),
 
                   // SYSTEM BUS master interface
                   .sb_address_data_o   (sb_address_data_o),

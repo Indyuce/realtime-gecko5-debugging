@@ -16,6 +16,8 @@ module jtag_if (
     // System bus signals
     input wire         sb_clock_i,
     input wire         sb_reset_i,
+    input wire         sb_grant_i,
+    output wire        sb_request_o,
     output wire [31:0] sb_address_data_o,
     output wire [3:0]  sb_byte_enables_o,
     output wire [7:0]  sb_burst_size_o,
@@ -159,6 +161,8 @@ module jtag_if (
 
         .sb_clock_i(sb_clock_i),
         .sb_reset_i(sb_reset_i),
+        .sb_grant_i(sb_grant_i),
+        .sb_request_o(sb_request_o),
         .sb_address_data_o(sb_address_data_o),
         .sb_byte_enables_o(sb_byte_enables_o),
         .sb_burst_size_o(sb_burst_size_o),

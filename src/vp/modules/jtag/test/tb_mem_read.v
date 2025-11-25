@@ -22,19 +22,35 @@ module tb_mem_read;
     // Emulated bus signals
     ////////////////////////
 
-    // ADBG BIU signals
-    wire        sb_end_transaction_adbg;
+    // ADBG signals
+    reg         sb_grant_adbg = 0; // Bus arbiter grant signal
+    wire        sb_request_adbg;
     wire [31:0] sb_address_data_adbg;
+    wire [3:0]  sb_byte_enables_adbg;
+    wire [7:0]  sb_burst_size_adbg;
+    wire        sb_read_n_write_adbg;
+    wire        sb_begin_transaction_adbg;
+    wire        sb_end_transaction_adbg;
+    wire        sb_data_valid_adbg;
 
     // Slave (emulated sdram) signals
     reg        sb_end_transaction_slave = 0;
     reg [31:0] sb_address_data_slave = 32'd0;
     reg        sb_error_slave = 0;
+    reg        sb_busy_slave = 0;
+    reg        sb_data_valid_slave = 0;
 
     // OR'd signals
+    wire sb_clock               = sys_clk;
     wire [31:0] sb_address_data = sb_address_data_slave | sb_address_data_adbg;
+    wire [3:0] sb_byte_enables  = sb_byte_enables_adbg;
+    wire [7:0] sb_burst_size    = sb_burst_size_adbg;
     wire sb_end_transaction     = sb_end_transaction_slave | sb_end_transaction_adbg;
+    wire sb_begin_transaction   = sb_begin_transaction_adbg;
+    wire sb_read_n_write        = sb_read_n_write_adbg;
     wire sb_error               = sb_error_slave;
+    wire sb_busy                = sb_busy_slave;
+    wire sb_data_valid          = sb_data_valid_adbg | sb_data_valid_slave;
     wire sb_reset               = 1'b0; // unused (for jsp server only. not sure what this does)
 
     localparam drlen = 53'd8;
@@ -51,12 +67,20 @@ module tb_mem_read;
 
         .sb_clock_i(sys_clk),
         .sb_reset_i(sys_reset),
-        .sb_end_transaction_i(sb_end_transaction),
-        .sb_address_data_i(sb_address_data),
-        .sb_error_i(sb_error),
-
+        .sb_grant_i(sb_grant_adbg),
+        .sb_request_o(sb_request_adbg),
+        .sb_address_data_o(sb_address_data_adbg),
+        .sb_byte_enables_o(sb_byte_enables_adbg),
+        .sb_burst_size_o(sb_burst_size_adbg),
+        .sb_read_n_write_o(sb_read_n_write_adbg),
+        .sb_begin_transaction_o(sb_begin_transaction_adbg),
         .sb_end_transaction_o(sb_end_transaction_adbg),
-        .sb_address_data_o(sb_address_data_adbg)
+        .sb_data_valid_o(sb_data_valid_adbg),
+        .sb_address_data_i(sb_address_data),
+        .sb_end_transaction_i(sb_end_transaction),
+        .sb_data_valid_i(sb_data_valid),
+        .sb_busy_i(sb_busy), 
+        .sb_error_i(sb_error)
     );
 
     // Clock generation : 4ns period
@@ -190,7 +214,6 @@ module tb_mem_read;
         send_dr(3'b100, 3);
         repeat(10) @(posedge TCK); // Idle
 
-
         //////////////////////////////////
         // Setup burst read command
         //////////////////////////////////
@@ -198,15 +221,38 @@ module tb_mem_read;
         setup_burst(4'h7, 32'h0000_1000, 16'd1);
 
         @(posedge TCK);
-        repeat(8) @(posedge sys_clk); // Idle
+        repeat(7) @(posedge sys_clk); // Idle
+
+        // Assert that sb_request_adbg is high after 8 sys_clk cycles
+        if (!sb_request_adbg) begin
+            $error("ERROR: adbg did not send bus request");
+        end
+
+        //////////////////////////////////
+        // Setup burst read command
+        //////////////////////////////////
+        sb_grant_adbg = 1'b1;
+        @(posedge sys_clk);
+        sb_grant_adbg = 1'b0;
+
+        repeat(7) @(posedge sys_clk); // Idle
+
+        //////////////////////////////////
+        // Slave returns word read
+        //////////////////////////////////
 
         @(posedge sys_clk);
-        sb_end_transaction_slave   = 1'b1;
         sb_address_data_slave = 32'hDEAD_BEEF;
+        sb_data_valid_slave = 1'b1;
         @(posedge sys_clk);
-        sb_end_transaction_slave   = 1'b0;
         sb_address_data_slave = 32'h0000_0000;
+        sb_data_valid_slave = 1'b0;
 
+        // Edge case: end transaction comes later
+        repeat(3) @(posedge sys_clk);
+        sb_end_transaction_slave = 1'b1;
+        @(posedge sys_clk);
+        sb_end_transaction_slave = 1'b0;
 
         repeat(20) @(posedge TCK); // Idle
         $finish;
