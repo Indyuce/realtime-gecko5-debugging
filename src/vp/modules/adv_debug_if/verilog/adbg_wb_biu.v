@@ -490,7 +490,6 @@ module adbg_wb_biu
           // On next cycle, FSM will be in TRANSFER state
           sb_begin_transaction_o <= 1'b1;
           sb_byte_enables_o <= 4'b1111;
-          sb_data_valid_o <= 1'b1;
           sb_read_n_write_o <= ~wr_reg; // read_not_write active when reading, wr_reg active when writing, hence the ~
         end
       end
