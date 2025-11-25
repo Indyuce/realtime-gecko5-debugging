@@ -28,7 +28,12 @@ module jtag_if (
     input wire end_transactionIN,
     input wire data_validIN,
     input wire busyIN,
-    input wire errorIN
+    input wire errorIN,
+
+
+    input wire [31:0] wb_dat_i,
+    input wire        wb_ack_i,
+    input wire        wb_err_i
 );
 
     ///////////////////////////////////////////////////////////////////////
@@ -156,21 +161,24 @@ module jtag_if (
         .blue(blue),
 
         .wb_clk_i(system_clock),
-        .wb_rst_i(system_reset)
+        .wb_rst_i(system_reset),
+        .wb_ack_i(wb_ack_i),
+        .wb_dat_i(wb_dat_i),
+        .wb_err_i(1'b0)
 
 /*
-    input   wb_clk_i,
-    input   wb_rst_i,
+    //input   wb_clk_i,
+    //input   wb_rst_i,
     output [31:0] wb_adr_o,
     output [31:0] wb_dat_o,
-    input [31:0]  wb_dat_i,
+    //input [31:0]  wb_dat_i,
     output        wb_cyc_o,
     output        wb_stb_o,
     output [3:0]  wb_sel_o,
     output        wb_we_o,
-    input         wb_ack_i,
+    //input         wb_ack_i,
     output        wb_cab_o,
-    input         wb_err_i,
+    //input         wb_err_i,
     output [2:0]  wb_cti_o,
     output [1:0]  wb_bte_o,
 

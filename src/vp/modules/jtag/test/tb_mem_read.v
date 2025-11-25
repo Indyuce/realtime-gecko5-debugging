@@ -18,10 +18,9 @@ module tb_mem_read;
     reg sys_clk;
     reg sys_reset;
 
-
-
-
-
+    reg sys_wb_ack = 0;
+    reg [31:0] sys_wb_dat_i = 32'd0;
+    reg sys_wb_err = 0;
 
     localparam drlen = 53'd8;
 
@@ -36,7 +35,10 @@ module tb_mem_read;
         .TDO(TDO),
 
         .system_clock(sys_clk),
-        .system_reset(sys_reset)
+        .system_reset(sys_reset),
+        .wb_ack_i(sys_wb_ack),
+        .wb_dat_i(sys_wb_dat_i),
+        .wb_err_i(sys_wb_err)
     );
 
     // Clock generation : 4ns period
@@ -176,6 +178,17 @@ module tb_mem_read;
         //////////////////////////////////
         // opcode 0x7 = burst read
         setup_burst(4'h7, 32'h0000_1000, 16'd1);
+
+        @(posedge TCK);
+        repeat(8) @(posedge sys_clk); // Idle
+
+        @(posedge sys_clk);
+        sys_wb_ack   = 1'b1;
+        sys_wb_dat_i = 32'hDEAD_BEEF;
+        @(posedge sys_clk);
+        sys_wb_ack   = 1'b0;
+        sys_wb_dat_i = 32'h0000_0000;
+
 
 
         repeat(20) @(posedge TCK); // Idle
