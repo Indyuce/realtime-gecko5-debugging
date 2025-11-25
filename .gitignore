@@ -18,6 +18,7 @@ build-release
 project/scripts/config.cfg
 
 *.vcd
+*.gtkw
 run_testbench
 
 or1420SingleCore.bit
