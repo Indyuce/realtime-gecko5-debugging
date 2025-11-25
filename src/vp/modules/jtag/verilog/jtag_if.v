@@ -135,9 +135,6 @@ module jtag_if (
     //
     ///////////////////////////////////////////////////////////////////////
 
-    assign sb_end_transaction_o = 1'b0; // unused TODO
-    assign sb_address_data_o   = 32'd0; // unused TODO 
-
     adbg_top #(
         .DBG_CPU0_SUPPORTED("NONE"), // TODO
         .DBG_CPU1_SUPPORTED("NONE"), // TODO

@@ -163,11 +163,11 @@ module adbg_wb_biu
    reg 		 rdy_o;
    wire 	 err_o;
 
-  //reg [31:0] sb_address_data_o; // TODO 
+  reg [31:0] sb_address_data_o; 
   reg [3:0]  sb_byte_enables_o;
   reg        sb_begin_transaction_o;
   //reg        sb_end_transaction_o; // TODO
-  reg        sb_data_valid_o; 
+  //reg        sb_data_valid_o; 
   reg        sb_read_n_write_o;
 
   /*
@@ -346,12 +346,12 @@ module adbg_wb_biu
    assign wb_bte_o = 2'h0;
    assign wb_cab_o = 1'b0;
 */
-  assign data_o = data_out_reg;
 
-  assign sb_request_o = reg_bus_req;
-  assign sb_address_data_o = 0; // TODO
-  assign sb_burst_size_o = 0; // Always single word rw's so burst size is always zero
+  assign data_o               = data_out_reg;
+  assign sb_request_o         = reg_bus_req;
+  assign sb_burst_size_o      = 0; // Always single word rw's so burst size is always zero
   assign sb_end_transaction_o = 1'b0; // TODO
+  assign sb_data_valid_o      = 1'b0; // TODO
 
    ///////////////////////////////////////////////////////
    // Wishbone clock domain
@@ -463,57 +463,49 @@ module adbg_wb_biu
   end
 
   // Outputs of state machine (combinatorial)
-  // TODO !!!! fix double assignments !!!!
   always @ (*)
   begin
-    rdy_sync_en <= 1'b0;
-    err_en <= 1'b0;
-    data_o_en <= 1'b0;
-    reg_bus_req <= 1'b0;
-    sb_begin_transaction_o <= 1'b0;
-    sb_byte_enables_o <= 4'b0000;
-    sb_data_valid_o <= 1'b0;
-    sb_read_n_write_o <= 1'b0;
-    
     case (wb_fsm_state)
     `STATE_IDLE:
       begin
-        // Wait patiently until access to bus
+        rdy_sync_en <= 1'b0;
+        err_en <= 1'b0;
+        data_o_en <= 1'b0;
+
+        reg_bus_req <= 1'b0;
+
+        sb_address_data_o      <= 32'h0;
+        sb_begin_transaction_o <= 1'b0;
+        sb_byte_enables_o      <= 4'b0000;
+        sb_read_n_write_o      <= 1'b0;
       end
 
     `STATE_REQUEST:
       begin
-        reg_bus_req <= 1'b1;
+        rdy_sync_en <= 1'b0;
+        err_en <= 1'b0;
+        data_o_en <= 1'b0;
 
-        if (sb_grant_i) begin
-          // Provide information during exactly one cycle
-          // On next cycle, FSM will be in TRANSFER state
-          sb_begin_transaction_o <= 1'b1;
-          sb_byte_enables_o <= 4'b1111;
-          sb_read_n_write_o <= ~wr_reg; // read_not_write active when reading, wr_reg active when writing, hence the ~
-        end
+        reg_bus_req <= 1'b1; // Request bus access
+
+        sb_address_data_o      <= sb_grant_i ? addr_reg : 32'h0;
+        sb_begin_transaction_o <= sb_grant_i ? 1'b1 : 1'b0;
+        sb_byte_enables_o      <= sb_grant_i ? 4'b1111 : 4'b0000; // always 4 bytes
+        sb_read_n_write_o      <= sb_grant_i ? ~wr_reg : 1'b0; // read_not_write active when reading, wr_reg active when writing, hence the ~
       end
 
     `STATE_TRANSFER:
       begin
+        rdy_sync_en <= (sb_error_i || sb_data_valid_i) ? 1'b1 : 1'b0;
+        err_en      <= sb_error_i ? 1'b1 : 1'b0;
+        data_o_en   <= sb_data_valid_i ? 1'b1 : 1'b0;
 
-        if (sb_data_valid_i) begin
-          data_o_en <= 1'b1;
-          rdy_sync_en <= 1'b1;
-          err_en <= 1'b1;
-        end
-        /*
-          wb_cyc_o <= 1'b1;
-          wb_stb_o <= 1'b1;
-          if(wb_ack_i) begin
-            data_o_en <= 1'b1;
-            rdy_sync_en <= 1'b1;
-          end
-          else if (sb_error_i) begin
-            err_en <= 1'b1;
-            rdy_sync_en <= 1'b1;
-          end
-          */
+        reg_bus_req <= 1'b0;
+
+        sb_address_data_o      <= 32'h0;
+        sb_begin_transaction_o <= 1'b0;
+        sb_byte_enables_o      <= 4'b0000;
+        sb_read_n_write_o      <= 1'b0;
       end
     endcase
   end
