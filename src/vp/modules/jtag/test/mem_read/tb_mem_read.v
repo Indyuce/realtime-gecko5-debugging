@@ -19,11 +19,41 @@ module tb_mem_read;
     reg sys_reset;
 
     ////////////////////////
-    // Emulated bus signals
+    // Emulated bus & arbiter signals
     ////////////////////////
 
+    // Bus signals
+    wire        sb_begin_transaction;
+    wire        sb_end_transaction;
+    wire        sb_data_valid;
+    wire [31:0] sb_address_data;
+    wire [7:0]  sb_burst_size;
+
+    // Bus arbiter
+    wire        s_busIdle, s_snoopableBurst;
+    wire [31:0] s_busRequests, s_busGrants;
+    wire sb_error_arbiter, sb_end_transaction_arbiter;
+
+    busArbiter arbiter (
+                    .clock(sys_clk),
+                    .reset(sys_reset),
+                    .busRequests(s_busRequests),
+                    .busGrants(s_busGrants),
+
+                    .busErrorOut(sb_error_arbiter),
+                    .endTransactionOut(sb_end_transaction_arbiter),
+
+                    .busIdle(s_busIdle), // not used for simulation
+                    .snoopableBurst(s_snoopableBurst), // not used for simulation
+
+                    .beginTransactionIn(sb_begin_transaction),
+                    .endTransactionIn(sb_end_transaction),
+                    .dataValidIn(sb_data_valid),
+                    .addressDataIn(sb_address_data[31:30]),
+                    .burstSizeIn(sb_burst_size));
+
     // ADBG signals
-    reg         sb_grant_adbg = 0; // Bus arbiter grant signal
+    wire        sb_grant_adbg = s_busGrants[31];
     wire        sb_request_adbg;
     wire [31:0] sb_address_data_adbg;
     wire [3:0]  sb_byte_enables_adbg;
@@ -40,18 +70,21 @@ module tb_mem_read;
     reg        sb_busy_slave = 0;
     reg        sb_data_valid_slave = 0;
 
-    // OR'd signals
+    // Public bus signals (OR'd signals + arbiter requests)
     wire sb_clock               = sys_clk;
-    wire [31:0] sb_address_data = sb_address_data_slave | sb_address_data_adbg;
+    assign      sb_address_data = sb_address_data_slave | sb_address_data_adbg;
     wire [3:0] sb_byte_enables  = sb_byte_enables_adbg;
-    wire [7:0] sb_burst_size    = sb_burst_size_adbg;
-    wire sb_end_transaction     = sb_end_transaction_slave | sb_end_transaction_adbg;
-    wire sb_begin_transaction   = sb_begin_transaction_adbg;
+    assign     sb_burst_size    = sb_burst_size_adbg;
+    assign sb_end_transaction   = sb_end_transaction_slave | sb_end_transaction_adbg;
+    assign sb_begin_transaction = sb_begin_transaction_adbg;
     wire sb_read_n_write        = sb_read_n_write_adbg;
-    wire sb_error               = sb_error_slave;
+    wire sb_error               = sb_error_slave | sb_error_arbiter;
     wire sb_busy                = sb_busy_slave;
-    wire sb_data_valid          = sb_data_valid_adbg | sb_data_valid_slave;
+    assign sb_data_valid        = sb_data_valid_adbg | sb_data_valid_slave;
     wire sb_reset               = 1'b0; // unused (for jsp server only. not sure what this does)
+
+    assign s_busRequests[31]    = sb_request_adbg;
+    assign s_busRequests[30:0]  = 31'd0;
 
     localparam drlen = 53'd8;
 
@@ -229,11 +262,11 @@ module tb_mem_read;
         end
 
         //////////////////////////////////
-        // Setup burst read command
+        // Arbiter grants bus to ADBG
         //////////////////////////////////
-        sb_grant_adbg = 1'b1;
-        @(posedge sys_clk);
-        sb_grant_adbg = 1'b0;
+        //sb_grant_adbg = 1'b1;
+        //@(posedge sys_clk);
+        //sb_grant_adbg = 1'b0;
 
         repeat(7) @(posedge sys_clk); // Idle
 
