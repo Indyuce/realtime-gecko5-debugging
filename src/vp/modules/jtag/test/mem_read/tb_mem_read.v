@@ -90,7 +90,7 @@ module tb_mem_read;
     //////////////////////////////////////////////////////////////////////////
 
     localparam drlen = 53'd8;
-    localparam SIMULATE_BUS_ERROR = 1'b1; // set to 1 to simulate slave-triggered bus error
+    localparam SIMULATE_BUS_ERROR = 1'b0; // set to 1 to simulate slave-triggered bus error
 
     reg [drlen-1:0] reg_tdo_out;
     wire [1:0] s_tdo_module_out = reg_tdo_out[1:0];
@@ -169,7 +169,7 @@ module tb_mem_read;
     //////////////////////////////////////////////////////////////////////////
     // Perform a DR scan (both read and write)
     //////////////////////////////////////////////////////////////////////////
-    task send_dr(input [63:0] dr_value, input integer dr_len);
+    task send_dr(input [128:0] dr_value, input integer dr_len);
         integer i;
     begin
         reg_tdo_out = 0;
@@ -257,7 +257,8 @@ module tb_mem_read;
         //////////////////////////////////
         // Setup burst read command
         //////////////////////////////////
-        // opcode 0x7 = burst read
+        // opcode 0x7 = burst read 32-bit words
+        // 16'd1      = read 1 word
         setup_burst(4'h7, 32'h0000_1000, 16'd1);
 
         // !! CAN WAIT INDEFINITELY !!
@@ -281,13 +282,20 @@ module tb_mem_read;
             @(posedge sys_clk);
             sb_address_data_slave = 32'h0000_0000;
             sb_data_valid_slave = 1'b0;
+
+            // end_transaction is allowed to come later
+            repeat(3) @(posedge sys_clk);
+            sb_end_transaction_slave = 1'b1;
+            @(posedge sys_clk);
+            sb_end_transaction_slave = 1'b0;
         end
 
-        // Edge case: end transaction comes later
-        repeat(3) @(posedge sys_clk);
-        sb_end_transaction_slave = 1'b1;
-        @(posedge sys_clk);
-        sb_end_transaction_slave = 1'b0;
+        repeat(3) @(posedge TCK); // Idle
+
+        //////////////////////////////////
+        // Burst-read DR scan
+        //////////////////////////////////
+        send_dr(72'h0, 72); // read 72 bits
 
         repeat(20) @(posedge TCK); // Idle
         $finish;

@@ -197,7 +197,6 @@ always @(posedge tck_i) begin
   //  shadow_reg <= input_shift_reg;
   //end
 
-  tdo_o <= 0;
 end
 
 // [end of patch]
@@ -440,8 +439,8 @@ assign select_inhibit = |module_inhibit;
 
 /////////////////////////////////////////////////
 // TDO output MUX
-/*
-always @  (input_shift_reg) //(module_id_reg or tdo_wb or tdo_cpu0 or tdo_cpu1 or tdo_jsp)
+
+always @ (module_id_reg or tdo_wb or tdo_cpu0 or tdo_cpu1 or tdo_jsp)
 begin
    case (module_id_reg)
      `DBG_TOP_WISHBONE_DEBUG_MODULE: tdo_o <= tdo_wb;
@@ -450,8 +449,7 @@ begin
      `DBG_TOP_JSP_DEBUG_MODULE:      tdo_o <= tdo_jsp;
      default:                        tdo_o <= 1'b0;
    endcase
-   tdo_o <= input_shift_reg[0];
 end
-*/
+
 
 endmodule
