@@ -91,6 +91,7 @@ module tb_mem_read;
 
     localparam drlen = 53'd8;
     localparam SIMULATE_BUS_ERROR = 1'b0; // set to 1 to simulate slave-triggered bus error
+    localparam SIMULATE_WRITE     = 1'b1; // set to 1 to simulate normal read operation
 
     reg [128:0] reg_tdo_out;
 
@@ -252,49 +253,90 @@ module tb_mem_read;
         repeat(10) @(posedge TCK); // Idle
 
         //////////////////////////////////
-        // Setup burst read command
+        // Burst setup command
         //////////////////////////////////
-        // opcode 0x7 = burst read 32-bit words
-        // 16'd1      = read 1 word
-        setup_burst(4'h7, 32'h0000_1000, 16'd1);
+        // opcode 0x3    = burst read 32-bit words
+        // opcode 0x7    = burst read 32-bit words
+        // 16'd1         = read/write 1 word
+        // 32'h0000_1000 = address to read from/write to
+        setup_burst(SIMULATE_WRITE ? 4'h3 : 4'h7, 32'h0000_1000, 16'd1);
 
-        // !! CAN WAIT INDEFINITELY !!
-        @(posedge sb_grant_adbg); // wait for bus grant to ADBG
-        repeat(5) @(posedge sys_clk); // Slave takes some time to respond
+        if (SIMULATE_WRITE) begin
+            repeat(10) @(posedge TCK); // Idle
 
-        //////////////////////////////////
-        // Slave returns word read
-        //////////////////////////////////
+            //////////////////////////////////
+            // Burst dr-scan
+            //////////////////////////////////
 
-        // simulate bus error from slave
-        if (SIMULATE_BUS_ERROR) begin
-            sb_error_slave = 1'b1; 
-            @(posedge sys_clk);
-            sb_error_slave = 1'b0;
+            fork
+
+                // concurrently write
+                begin
+                    // TODO replace by real CRC
+                    send_dr({ 1'b0, 32'hDEAD_BEEF, 32'h0, 1'b0 }, 66); // write 66 bits
+                end
+
+                // concurrently wait for grant
+                begin
+
+                    // !! CAN WAIT INDEFINITELY !!
+                    @(posedge sb_grant_adbg); // wait for bus grant to ADBG
+                    @(negedge sb_grant_adbg);
+
+                    sb_busy_slave = 1'b1; // slave busy
+                    repeat(5) @(posedge sys_clk); // wait for bus grant to ADBG
+                    sb_busy_slave = 1'b0; // slave readyyyy
+
+                end
+
+            join
+
+            repeat(20) @(posedge TCK); // Idle
         end
-        // simulate working slave
-        else begin
-            sb_address_data_slave = 32'hDEAD_BEEF;
-            sb_data_valid_slave = 1'b1;
-            @(posedge sys_clk);
-            sb_address_data_slave = 32'h0000_0000;
-            sb_data_valid_slave = 1'b0;
 
-            // end_transaction is allowed to come later
-            repeat(3) @(posedge sys_clk);
-            sb_end_transaction_slave = 1'b1;
-            @(posedge sys_clk);
-            sb_end_transaction_slave = 1'b0;
+        else begin 
+
+            // !! CAN WAIT INDEFINITELY !!
+            @(posedge sb_grant_adbg); // wait for bus grant to ADBG
+            repeat(20) @(posedge sys_clk); // Slave takes some time to respond
+
+            //////////////////////////////////
+            // Slave returns word read
+            //////////////////////////////////
+
+            // simulate bus error from slave
+            if (SIMULATE_BUS_ERROR) begin
+                sb_error_slave = 1'b1; 
+                @(posedge sys_clk);
+                sb_error_slave = 1'b0;
+            end
+            // simulate working slave
+            else begin
+                sb_address_data_slave = 32'hDEAD_BEEF;
+                sb_data_valid_slave = 1'b1;
+                @(posedge sys_clk);
+                sb_address_data_slave = 32'h0000_0000;
+                sb_data_valid_slave = 1'b0;
+
+                // end_transaction is allowed to come later
+                repeat(3) @(posedge sys_clk);
+                sb_end_transaction_slave = 1'b1;
+                @(posedge sys_clk);
+                sb_end_transaction_slave = 1'b0;
+            end
+
+            repeat(3) @(posedge TCK); // Idle
+
+            //////////////////////////////////
+            // Burst-read DR scan
+            //////////////////////////////////
+            send_dr(72'h0, 72); // read 72 bits
+
+            repeat(20) @(posedge TCK); // Idle
         end
 
-        repeat(3) @(posedge TCK); // Idle
+        // end of test
 
-        //////////////////////////////////
-        // Burst-read DR scan
-        //////////////////////////////////
-        send_dr(72'h0, 72); // read 72 bits
-
-        repeat(20) @(posedge TCK); // Idle
         $finish;
     end
 
