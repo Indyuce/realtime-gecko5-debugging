@@ -166,7 +166,7 @@ module adbg_wb_biu
   reg [31:0] sb_address_data_o; 
   reg [3:0]  sb_byte_enables_o;
   reg        sb_begin_transaction_o;
-  //reg        sb_end_transaction_o; // TODO
+  reg        sb_end_transaction_o;
   //reg        sb_data_valid_o; 
   reg        sb_read_n_write_o;
 
@@ -350,8 +350,7 @@ module adbg_wb_biu
   assign data_o               = data_out_reg;
   assign sb_request_o         = reg_bus_req;
   assign sb_burst_size_o      = 0; // Always single word rw's so burst size is always zero
-  assign sb_end_transaction_o = 1'b0; // TODO
-  assign sb_data_valid_o      = 1'b0; // TODO
+  assign sb_data_valid_o      = 1'b0; // TODO writes
 
    ///////////////////////////////////////////////////////
    // Wishbone clock domain
@@ -476,6 +475,7 @@ module adbg_wb_biu
 
         sb_address_data_o      <= 32'h0;
         sb_begin_transaction_o <= 1'b0;
+        sb_end_transaction_o   <= 1'b0;
         sb_byte_enables_o      <= 4'b0000;
         sb_read_n_write_o      <= 1'b0;
       end
@@ -490,8 +490,9 @@ module adbg_wb_biu
 
         sb_address_data_o      <= sb_grant_i ? addr_reg : 32'h0;
         sb_begin_transaction_o <= sb_grant_i ? 1'b1 : 1'b0;
+        sb_end_transaction_o   <= 1'b0;
         sb_byte_enables_o      <= sb_grant_i ? 4'b1111 : 4'b0000; // always 4 bytes
-        sb_read_n_write_o      <= sb_grant_i ? ~wr_reg : 1'b0; // read_not_write active when reading, wr_reg active when writing, hence the ~
+        sb_read_n_write_o      <= sb_grant_i ? ~wr_reg : 1'b0; // read_not_write == ~wr_reg
       end
 
     `STATE_TRANSFER:
@@ -504,6 +505,7 @@ module adbg_wb_biu
 
         sb_address_data_o      <= 32'h0;
         sb_begin_transaction_o <= 1'b0;
+        sb_end_transaction_o   <= sb_error_i ? 1'b1 : 1'b0; // end transaction if error. TODO writes
         sb_byte_enables_o      <= 4'b0000;
         sb_read_n_write_o      <= 1'b0;
       end

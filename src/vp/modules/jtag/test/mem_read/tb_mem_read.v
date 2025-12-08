@@ -90,6 +90,7 @@ module tb_mem_read;
     //////////////////////////////////////////////////////////////////////////
 
     localparam drlen = 53'd8;
+    localparam SIMULATE_BUS_ERROR = 1'b1; // set to 1 to simulate slave-triggered bus error
 
     reg [drlen-1:0] reg_tdo_out;
     wire [1:0] s_tdo_module_out = reg_tdo_out[1:0];
@@ -259,33 +260,28 @@ module tb_mem_read;
         // opcode 0x7 = burst read
         setup_burst(4'h7, 32'h0000_1000, 16'd1);
 
-        @(posedge TCK);
-        repeat(7) @(posedge sys_clk); // Idle
-
-        // Assert that sb_request_adbg is high after 8 sys_clk cycles
-        if (!sb_request_adbg) begin
-            $error("ERROR: adbg did not send bus request");
-        end
-
-        //////////////////////////////////
-        // Arbiter grants bus to ADBG
-        //////////////////////////////////
-        //sb_grant_adbg = 1'b1;
-        //@(posedge sys_clk);
-        //sb_grant_adbg = 1'b0;
-
-        repeat(7) @(posedge sys_clk); // Idle
+        // !! CAN WAIT INDEFINITELY !!
+        @(posedge sb_grant_adbg); // wait for bus grant to ADBG
+        repeat(5) @(posedge sys_clk); // Slave takes some time to respond
 
         //////////////////////////////////
         // Slave returns word read
         //////////////////////////////////
 
-        @(posedge sys_clk);
-        sb_address_data_slave = 32'hDEAD_BEEF;
-        sb_data_valid_slave = 1'b1;
-        @(posedge sys_clk);
-        sb_address_data_slave = 32'h0000_0000;
-        sb_data_valid_slave = 1'b0;
+        // simulate bus error from slave
+        if (SIMULATE_BUS_ERROR) begin
+            sb_error_slave = 1'b1; 
+            @(posedge sys_clk);
+            sb_error_slave = 1'b0;
+        end
+        // simulate working slave
+        else begin
+            sb_address_data_slave = 32'hDEAD_BEEF;
+            sb_data_valid_slave = 1'b1;
+            @(posedge sys_clk);
+            sb_address_data_slave = 32'h0000_0000;
+            sb_data_valid_slave = 1'b0;
+        end
 
         // Edge case: end transaction comes later
         repeat(3) @(posedge sys_clk);
