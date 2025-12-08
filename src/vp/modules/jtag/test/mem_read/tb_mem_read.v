@@ -92,8 +92,7 @@ module tb_mem_read;
     localparam drlen = 53'd8;
     localparam SIMULATE_BUS_ERROR = 1'b0; // set to 1 to simulate slave-triggered bus error
 
-    reg [drlen-1:0] reg_tdo_out;
-    wire [1:0] s_tdo_module_out = reg_tdo_out[1:0];
+    reg [128:0] reg_tdo_out;
 
     // Instantiate DUT
     jtag_if dut (
@@ -184,9 +183,7 @@ module tb_mem_read;
         for (i = 0; i < dr_len; i = i + 1) begin
             jtag_clock(i == dr_len - 1, dr_value[i]);
 
-            // TODO probleme avec 
-            //@(negedge TCK);
-            //reg_tdo_out[i] = TDO;
+            reg_tdo_out[i-1] = TDO; // !! SKIP FIRST STATUS BIT !!
         end
         // Terminate sequence
         jtag_clock(1, 0); // -> Update-DR
