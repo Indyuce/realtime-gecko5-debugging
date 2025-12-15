@@ -469,10 +469,11 @@ module adbg_wb_biu
       end
 
     // Wait for grant. On grant, begin transaction and write important signals
+    // ON transition to TRANSFER state, reset error flag and data reg
     `STATE_REQUEST:
       begin
         rdy_sync_en  <= 1'b0;
-        err_reg      <= 1'b0; // reset error flag
+        err_reg      <= err_reg;
         data_out_reg <= data_out_reg;
 
         reg_bus_req <= 1'b1; // Request bus access
@@ -491,7 +492,7 @@ module adbg_wb_biu
     default:
       begin
         rdy_sync_en  <= (sb_error_i || (sb_data_valid_i && !sb_busy_i)) ? 1'b1 : 1'b0;
-        err_reg      <= sb_error_i ? 1'b1 : err_reg;
+        err_reg      <= sb_error_i ? 1'b1 : (~wr_reg && sb_data_valid_i) ? sb_error_i : err_reg;
         data_out_reg <= ~wr_reg && sb_data_valid_i ? swapped_data_out : data_out_reg;
 
         reg_bus_req <= 1'b0;
