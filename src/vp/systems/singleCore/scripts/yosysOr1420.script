@@ -69,5 +69,5 @@ read -sv ../../../modules/adv_debug_if/verilog/syncflop.v
 read -sv ../../../modules/adv_debug_if/verilog/syncreg.v
 
 read -sv ../verilog/or1420SingleCore.v
-synth_ecp5 -top or1420SingleCore -json or1420SingleCore.json
+synth_ecp5 -noabc9 -top or1420SingleCore -json or1420SingleCore.json
 

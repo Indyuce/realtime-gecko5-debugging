@@ -77,7 +77,6 @@ module jtag_if (
     //
     ///////////////////////////////////////////////////////////////////////
 
-    reg         _sb_reset_i;
     reg         _sb_grant_i;
     reg [31:0]  _sb_address_data_i;
     reg         _sb_end_transaction_i;
@@ -86,7 +85,6 @@ module jtag_if (
     reg         _sb_error_i;
 
     always @(posedge sb_clock_i) begin
-        _sb_reset_i            <= sb_reset_i;
         _sb_grant_i            <= sb_grant_i;
         _sb_address_data_i     <= sb_address_data_i;
         _sb_end_transaction_i  <= sb_end_transaction_i;
@@ -148,6 +146,8 @@ module jtag_if (
     ///////////////////////////////////////////////////////////////////////
 
     adbg_top #(
+        //[comment to disable wishbone module]
+        //.DBG_WISHBONE_SUPPORTED("NONE"),
         .DBG_CPU0_SUPPORTED("NONE"), // TODO
         .DBG_CPU1_SUPPORTED("NONE"), // TODO
         .DBG_JSP_SUPPORTED("NONE")
@@ -169,7 +169,7 @@ module jtag_if (
         .blue(blue),
 
         .sb_clock_i(sb_clock_i),
-        .sb_reset_i(_sb_reset_i),
+        .sb_reset_i(sb_reset_i),
         .sb_grant_i(_sb_grant_i),
         .sb_request_o(sb_request_o),
         .sb_address_data_o(sb_address_data_o),

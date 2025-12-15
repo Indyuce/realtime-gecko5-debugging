@@ -360,7 +360,7 @@ module adbg_wb_biu
 	     if(rst_i) begin
 		str_sync_wbff1 <= 1'b0;
 		str_sync_wbff2 <= 1'b0;
-		str_sync_wbff2q <= 1'b0;      
+		str_sync_wbff2q <= 1'b0;
 	     end
 	     else begin
 		str_sync_wbff1 <= str_sync;
@@ -418,16 +418,16 @@ module adbg_wb_biu
    reg [1:0] wb_fsm_state;
    reg [1:0] next_fsm_state;
 
-`define STATE_IDLE     2'd0 // Ready
-`define STATE_REQUEST  2'd1 // Waiting for bus access
-`define STATE_TRANSFER 2'd2 // Performing transfer
+  `define STATE_IDLE     2'd0 // Ready
+  `define STATE_REQUEST  2'd1 // Waiting for bus access
+  `define STATE_TRANSFER 2'd2 // Performing transfer
 
-   // Sequential bit
+  // Sequential bit
    always @ (posedge sb_clock_i or posedge rst_i)
      begin
-	if(rst_i) wb_fsm_state <= `STATE_IDLE;
-	else wb_fsm_state <= next_fsm_state; 
-     end
+    if(rst_i) wb_fsm_state <= `STATE_IDLE;
+    else wb_fsm_state <= next_fsm_state; 
+  end
 
   // Determination of next state (combinatorial)
   always @ (*)
@@ -452,7 +452,8 @@ module adbg_wb_biu
       end
 
       // In transfer state, go to idle state on ack or error
-      `STATE_TRANSFER:
+      // `STATE_TRANSFER
+      default: 
       begin
         if ((sb_data_valid_i && !sb_busy_i) || sb_error_i) next_fsm_state <= `STATE_IDLE;
         else next_fsm_state <= `STATE_TRANSFER;
@@ -464,6 +465,8 @@ module adbg_wb_biu
   always @ (*)
   begin
     case (wb_fsm_state)
+
+    // Wait for WB module to start talking to us
     `STATE_IDLE:
       begin
         rdy_sync_en <= 1'b0;
@@ -480,6 +483,7 @@ module adbg_wb_biu
         sb_data_valid_o        <= 1'b0;
       end
 
+    // Wait for grant. On grant, begin transaction and write important signals
     `STATE_REQUEST:
       begin
         rdy_sync_en <= 1'b0;
@@ -496,7 +500,10 @@ module adbg_wb_biu
         sb_data_valid_o        <= 1'b0;
       end
 
-    `STATE_TRANSFER:
+    // In case of read, keep trying to write until busy is unasserted.
+    // In case of write, wait patiently for ack (payload sent on state transition REQUEST->TRANSFER)
+    // `STATE_TRANSFER
+    default:
       begin
         rdy_sync_en <= (sb_error_i || (sb_data_valid_i && !sb_busy_i)) ? 1'b1 : 1'b0;
         err_en      <= sb_error_i ? 1'b1 : 1'b0;
