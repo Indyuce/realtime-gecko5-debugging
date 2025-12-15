@@ -90,7 +90,7 @@ module tb_mem_read;
     //////////////////////////////////////////////////////////////////////////
 
     localparam drlen = 53'd8;
-    localparam SIMULATE_BUS_ERROR = 1'b1; // set to 1 to simulate slave-triggered bus error
+    localparam SIMULATE_BUS_ERROR = 1'b0; // set to 1 to simulate slave-triggered bus error
     localparam SIMULATE_WRITE     = 1'b1; // set to 1 to simulate normal read operation
 
     reg [128:0] reg_tdo_out;
@@ -282,16 +282,18 @@ module tb_mem_read;
                     // !! CAN WAIT INDEFINITELY !!
                     @(posedge sb_grant_adbg); // wait for bus grant to ADBG
                     @(negedge sb_grant_adbg);
+                    @(posedge sys_clk);
 
-                    sb_busy_slave = 1'b1; // slave busy
+                    sb_busy_slave <= 1'b1; // slave busy
                     repeat(5) @(posedge sys_clk); // wait for bus grant to ADBG
+                     // simulate non blocking assignment sb_busy_in latching too fast
 
                     // simulate bus error from slave
                     if (SIMULATE_BUS_ERROR) begin
-                        sb_error_slave = 1'b1; 
-                        sb_busy_slave = 1'b0;
+                        sb_error_slave <= 1'b1;
+                        sb_busy_slave <= 1'b0;
                         @(posedge sys_clk);
-                        sb_error_slave = 1'b0;
+                        sb_error_slave <= 1'b0;
                         
                         // transaction ended by master
                         
