@@ -202,9 +202,7 @@ module adbg_wb_biu
 
 
    // Control Signals
-   reg 		 data_o_en;    // latch wb_data_i
    reg 		 rdy_sync_en;  // toggle the rdy_sync signal, indicate ready to TCK domain
-   reg 		 err_en;       // latch the wb_err_i signal
 
    // Internal signals
    reg [3:0] 	 be_dec;  // word_size and low-order address bits decoded to SEL bits
@@ -371,13 +369,6 @@ module adbg_wb_biu
 
    assign start_toggle = (str_sync_wbff2 != str_sync_wbff2q);
 
-   // Error indicator register
-   always @ (posedge sb_clock_i or posedge rst_i)
-     begin
-	if(rst_i) err_reg <= 1'b0;
-	else if(err_en) err_reg <= sb_error_i; 
-     end
-
    // Byte- or word-swap the WB->dbg data, as necessary (combinatorial)
    // We assume bits not required by SEL are don't care.  We reuse assignments
    // where possible to keep the MUX smaller.  (combinatorial)
@@ -395,12 +386,6 @@ module adbg_wb_biu
 	endcase
      end
 
-   // WB->dbg data register
-   always @ (posedge sb_clock_i or posedge rst_i)
-     begin
-	if(rst_i) data_out_reg <= 32'h0;
-	else if(data_o_en) data_out_reg <= swapped_data_out;
-     end
 
    // Create a toggle-active ready signal to send to the TCK domain
    always @ (posedge sb_clock_i or posedge rst_i)
@@ -469,9 +454,9 @@ module adbg_wb_biu
     // Wait for WB module to start talking to us
     `STATE_IDLE:
       begin
-        rdy_sync_en <= 1'b0;
-        err_en <= 1'b0;
-        data_o_en <= 1'b0;
+        rdy_sync_en  <= 1'b0;
+        err_reg      <= rst_i ? 1'b0 : err_reg;
+        data_out_reg <= rst_i ? 32'h0 : data_out_reg;
 
         reg_bus_req <= 1'b0;
 
@@ -486,9 +471,9 @@ module adbg_wb_biu
     // Wait for grant. On grant, begin transaction and write important signals
     `STATE_REQUEST:
       begin
-        rdy_sync_en <= 1'b0;
-        err_en <= 1'b0;
-        data_o_en <= 1'b0;
+        rdy_sync_en  <= 1'b0;
+        err_reg      <= 1'b0; // reset error flag
+        data_out_reg <= data_out_reg;
 
         reg_bus_req <= 1'b1; // Request bus access
 
@@ -505,9 +490,9 @@ module adbg_wb_biu
     // `STATE_TRANSFER
     default:
       begin
-        rdy_sync_en <= (sb_error_i || (sb_data_valid_i && !sb_busy_i)) ? 1'b1 : 1'b0;
-        err_en      <= sb_error_i ? 1'b1 : 1'b0;
-        data_o_en   <= ~wr_reg && sb_data_valid_i ? 1'b1 : 1'b0;
+        rdy_sync_en  <= (sb_error_i || (sb_data_valid_i && !sb_busy_i)) ? 1'b1 : 1'b0;
+        err_reg      <= sb_error_i ? 1'b1 : err_reg;
+        data_out_reg <= ~wr_reg && sb_data_valid_i ? swapped_data_out : data_out_reg;
 
         reg_bus_req <= 1'b0;
 
