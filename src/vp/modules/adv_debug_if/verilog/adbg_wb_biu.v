@@ -208,10 +208,10 @@ module adbg_wb_biu
 
    // Internal signals
    reg [3:0] 	 be_dec;  // word_size and low-order address bits decoded to SEL bits
-   wire 	 start_toggle;  // WB domain, indicates a toggle on the start strobe
-   reg [31:0] 	 swapped_data_i;
-   reg [31:0] 	 swapped_data_out;
-   reg          reg_bus_req; // request sent to arbiter for bus access
+   wire 	     start_toggle;  // WB domain, indicates a toggle on the start strobe
+   reg [31:0]  swapped_data_i;
+   reg [31:0]  swapped_data_out;
+   reg         reg_bus_req; // request sent to arbiter for bus access
 
    //////////////////////////////////////////////////////
    // TCK clock domain

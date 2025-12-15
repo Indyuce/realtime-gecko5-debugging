@@ -71,20 +71,29 @@ module jtag_if (
 
     ///////////////////////////////////////////////////////////////////////
     //
-    // Test layer
+    // Latch bus input signals to avoid
+    // long critical paths and retroactive loops
+    // Input signals are not exposed to layers below
     //
     ///////////////////////////////////////////////////////////////////////
 
+    reg         _sb_reset_i;
+    reg         _sb_grant_i;
+    reg [31:0]  _sb_address_data_i;
+    reg         _sb_end_transaction_i;
+    reg         _sb_data_valid_i;
+    reg         _sb_busy_i;
+    reg         _sb_error_i;
 
-    //wire [2:0] select_module_command;
-
-
-
-    wire s_JCAPTURE = s_JCE1 && !s_JSHIFT;
-
-    //assign select_module_command = shadow_reg[35:33];
-
-
+    always @(posedge sb_clock_i) begin
+        _sb_reset_i            <= sb_reset_i;
+        _sb_grant_i            <= sb_grant_i;
+        _sb_address_data_i     <= sb_address_data_i;
+        _sb_end_transaction_i  <= sb_end_transaction_i;
+        _sb_data_valid_i       <= sb_data_valid_i;
+        _sb_busy_i             <= sb_busy_i;
+        _sb_error_i            <= sb_error_i;
+    end
 
     ///////////////////////////////////////////////////////////////////////
     //
@@ -112,6 +121,9 @@ module jtag_if (
         .debug_select(s_selectAdbg)
     );
 */
+
+    wire s_JCAPTURE = s_JCE1 && !s_JSHIFT;
+
     /*
      * First interface problem:
      * We need a signal high when 0x32 is loaded in IR.
@@ -157,8 +169,8 @@ module jtag_if (
         .blue(blue),
 
         .sb_clock_i(sb_clock_i),
-        .sb_reset_i(sb_reset_i),
-        .sb_grant_i(sb_grant_i),
+        .sb_reset_i(_sb_reset_i),
+        .sb_grant_i(_sb_grant_i),
         .sb_request_o(sb_request_o),
         .sb_address_data_o(sb_address_data_o),
         .sb_byte_enables_o(sb_byte_enables_o),
@@ -167,12 +179,11 @@ module jtag_if (
         .sb_begin_transaction_o(sb_begin_transaction_o),
         .sb_end_transaction_o(sb_end_transaction_o),
         .sb_data_valid_o(sb_data_valid_o),
-        .sb_address_data_i(sb_address_data_i),
-        .sb_end_transaction_i(sb_end_transaction_i),
-        .sb_data_valid_i(sb_data_valid_i),
-        .sb_busy_i(sb_busy_i),
-        .sb_error_i(sb_error_i)
-
+        .sb_address_data_i(_sb_address_data_i),
+        .sb_end_transaction_i(_sb_end_transaction_i),
+        .sb_data_valid_i(_sb_data_valid_i),
+        .sb_busy_i(_sb_busy_i),
+        .sb_error_i(_sb_error_i)
 /*
     //input   wb_clk_i,
     //input   wb_rst_i,
