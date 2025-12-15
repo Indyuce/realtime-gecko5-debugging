@@ -301,7 +301,7 @@ module tb_mem_read;
                     // simulate working slave
                     else begin
                         
-                        sb_busy_slave = 1'b0; // slave readyyyy
+                        sb_busy_slave <= 1'b0; // slave readyyyy
                         // transaction ended by master
                     end
 
@@ -324,23 +324,23 @@ module tb_mem_read;
 
             // simulate bus error from slave
             if (SIMULATE_BUS_ERROR) begin
-                sb_error_slave = 1'b1; 
+                sb_error_slave <= 1'b1; 
                 @(posedge sys_clk);
-                sb_error_slave = 1'b0;
+                sb_error_slave <= 1'b0;
             end
             // simulate working slave
             else begin
-                sb_address_data_slave = 32'hDEAD_BEEF;
-                sb_data_valid_slave = 1'b1;
+                sb_address_data_slave <= 32'hDEAD_BEEF;
+                sb_data_valid_slave <= 1'b1;
                 @(posedge sys_clk);
-                sb_address_data_slave = 32'h0000_0000;
-                sb_data_valid_slave = 1'b0;
+                sb_address_data_slave <= 32'h0000_0000;
+                sb_data_valid_slave <= 1'b0;
 
                 // end_transaction is allowed to come later
                 repeat(3) @(posedge sys_clk);
-                sb_end_transaction_slave = 1'b1;
+                sb_end_transaction_slave <= 1'b1;
                 @(posedge sys_clk);
-                sb_end_transaction_slave = 1'b0;
+                sb_end_transaction_slave <= 1'b0;
             end
 
             repeat(3) @(posedge TCK); // Idle
