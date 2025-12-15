@@ -182,7 +182,7 @@ module jtag_if (
         .sb_address_data_i(_sb_address_data_i),
         .sb_end_transaction_i(_sb_end_transaction_i),
         .sb_data_valid_i(_sb_data_valid_i),
-        .sb_busy_i(sb_busy_i), // forced to used non latched version to avoid busy timing problem
+        .sb_busy_i(_sb_busy_i), // busy signal should be ready BEFORE positive clock edge
         .sb_error_i(_sb_error_i)
 /*
     //input   wb_clk_i,

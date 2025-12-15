@@ -281,12 +281,13 @@ module tb_mem_read;
 
                     // !! CAN WAIT INDEFINITELY !!
                     @(posedge sb_grant_adbg); // wait for bus grant to ADBG
-                    @(negedge sb_grant_adbg);
-                    @(posedge sys_clk);
-
+                    repeat(2) @(posedge sys_clk);
+ 
+                    @(negedge sys_clk); // busy signal should be ready BEFORE positive clock edge
                     sb_busy_slave <= 1'b1; // slave busy
-                    repeat(5) @(posedge sys_clk); // wait for bus grant to ADBG
-                     // simulate non blocking assignment sb_busy_in latching too fast
+
+                    repeat(5) @(negedge sys_clk); // wait for bus grant to ADBG
+                    // simulate non blocking assignment sb_busy_in latching too fast
 
                     // simulate bus error from slave
                     if (SIMULATE_BUS_ERROR) begin

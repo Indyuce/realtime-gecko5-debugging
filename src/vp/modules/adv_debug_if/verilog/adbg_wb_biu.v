@@ -461,8 +461,8 @@ module adbg_wb_biu
     endcase
   end
 
-  // Outputs of state machine (combinatorial)
-  always @ (*)
+  // Outputs of state machine
+  always @ (posedge sb_clock_i)
   begin
     case (wb_fsm_state)
 
