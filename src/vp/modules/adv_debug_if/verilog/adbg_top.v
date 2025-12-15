@@ -177,8 +177,11 @@ always @(posedge tck_i) begin
   shift_dr_i_patch <= shift_dr_i;
 end
 
+wire [3:0] wb_operation_o; // DEBUG
+
 assign red[3:0] = ~module_selects;
-assign red[9:4] = 6'b111111;
+assign red[5:4] = 2'b11;
+assign red[9:6] = ~wb_operation_o;
 assign green = ~(10'b0);
 assign blue  = ~(10'b0);
 
@@ -273,6 +276,8 @@ generate
                   .sb_clock_i        (sb_clock_i),
                   .sb_grant_i        (sb_grant_i),
                   .sb_request_o      (sb_request_o),
+
+                  .wb_operation_o    (wb_operation_o), // DEBUG
 
                   // SYSTEM BUS master interface
                   .sb_address_data_o   (sb_address_data_o),

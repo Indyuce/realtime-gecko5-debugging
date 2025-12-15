@@ -80,6 +80,8 @@ module adbg_wb_module #(
                        top_inhibit_o,
                        rst_i,
 
+					   wb_operation_o,//DEBUG
+
 						/*
                        // WISHBONE common signals
                        wb_clk_i,
@@ -114,6 +116,8 @@ module adbg_wb_module #(
    input         module_select_i;
    output        top_inhibit_o;
    input         rst_i;
+
+   output [3:0]   wb_operation_o;//DEBUG
 
    // SYSTEM BUS master interface
     input 	       sb_clock_i;
@@ -375,6 +379,8 @@ module adbg_wb_module #(
 	else if(op_reg_en)
 	  operation <= operation_in;
      end
+
+	assign wb_operation_o = operation; // DEBUG
 
    //////////////////////////////////////
      // Bit counter
