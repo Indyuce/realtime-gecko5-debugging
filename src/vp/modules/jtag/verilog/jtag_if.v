@@ -29,7 +29,10 @@ module jtag_if (
     input wire         sb_end_transaction_i,
     input wire         sb_data_valid_i,
     input wire         sb_busy_i,
-    input wire         sb_error_i
+    input wire         sb_error_i,
+
+    // CPU0 signals
+    input wire        cpu0_clk_i
 );
 
     ///////////////////////////////////////////////////////////////////////
@@ -146,10 +149,10 @@ module jtag_if (
     ///////////////////////////////////////////////////////////////////////
 
     adbg_top #(
-        //[comment to disable wishbone module]
+        //[comment to enable wishbone module]
         //.DBG_WISHBONE_SUPPORTED("NONE"),
-        .DBG_CPU0_SUPPORTED("NONE"), // TODO
-        .DBG_CPU1_SUPPORTED("NONE"), // TODO
+        //[comment to enable cpu0 module]
+        //.DBG_CPU0_SUPPORTED("NONE"), // TODO
         .DBG_JSP_SUPPORTED("NONE")
     ) adbg_top_impl (
 
@@ -168,6 +171,7 @@ module jtag_if (
         .green(green),
         .blue(blue),
 
+        // System bus signals
         .sb_clock_i(sb_clock_i),
         .sb_reset_i(sb_reset_i),
         .sb_grant_i(_sb_grant_i),
@@ -183,61 +187,20 @@ module jtag_if (
         .sb_end_transaction_i(_sb_end_transaction_i),
         .sb_data_valid_i(_sb_data_valid_i),
         .sb_busy_i(_sb_busy_i), // busy signal should be ready BEFORE positive clock edge
-        .sb_error_i(_sb_error_i)
-/*
-    //input   wb_clk_i,
-    //input   wb_rst_i,
-    output [31:0] wb_adr_o,
-    output [31:0] wb_dat_o,
-    //input [31:0]  wb_dat_i,
-    output        wb_cyc_o,
-    output        wb_stb_o,
-    output [3:0]  wb_sel_o,
-    output        wb_we_o,
-    //input         wb_ack_i,
-    output        wb_cab_o,
-    //input         wb_err_i,
-    output [2:0]  wb_cti_o,
-    output [1:0]  wb_bte_o,
+        .sb_error_i(_sb_error_i),
 
-    // CPU signals
-    input         cpu0_clk_i,
-    output [31:0] cpu0_addr_o,
-    input [31:0]  cpu0_data_i,
-    output [31:0] cpu0_data_o,
-    input         cpu0_bp_i,
-    output        cpu0_stall_o,
-    output        cpu0_stb_o,
-    output        cpu0_we_o,
-    input         cpu0_ack_i,
-    output        cpu0_rst_o,
+        // CPU signals
+        .cpu0_clk_i(cpu0_clk_i),
+        //.cpu0_addr_o(),
+        .cpu0_data_i(32'b0),
+        //.cpu0_data_o(),
+        .cpu0_bp_i(1'b0),
+        //.cpu0_stall_o(),
+        //.cpu0_stb_o(),
+        //.cpu0_we_o(),
+        .cpu0_ack_i(1'b0)
+        //.cpu0_rst_o(),
 
-
-    input         cpu1_clk_i,
-    output [31:0] cpu1_addr_o,
-    input [31:0]  cpu1_data_i,
-    output [31:0] cpu1_data_o,
-    input         cpu1_bp_i,
-    output        cpu1_stall_o,
-    output        cpu1_stb_o,
-    output        cpu1_we_o,
-    input         cpu1_ack_i,
-    output        cpu1_rst_o,
-
-    input [31:0]  wb_jsp_adr_i,
-    output [31:0] wb_jsp_dat_o,
-    input [31:0]  wb_jsp_dat_i,
-    input         wb_jsp_cyc_i,
-    input         wb_jsp_stb_i,
-    input [3:0]   wb_jsp_sel_i,
-    input         wb_jsp_we_i,
-    output        wb_jsp_ack_o,
-    input         wb_jsp_cab_i,
-    output        wb_jsp_err_o,
-    input [2:0]   wb_jsp_cti_i,
-    input [1:0]   wb_jsp_bte_i,
-    output        int_o
-*/
     );
 
     

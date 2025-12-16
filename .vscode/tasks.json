@@ -38,11 +38,11 @@
       "problemMatcher": []
     },
     {
-      "label": "4) Telnet",
+      "label": "4) Telnet/GDB",
       "type": "shell",
       "command": "bash",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/src/vp/scripts"
       },
       "runOptions": {
         "runOn": "folderOpen"

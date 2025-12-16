@@ -15,7 +15,10 @@ ressources
 .DS_Store
 build-release
 *.o
-project/scripts/config.cfg
+
+
+# file for testing GDB
+project/scripts/hello.elf
 
 *.vcd
 *.gtkw
