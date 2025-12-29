@@ -20,6 +20,7 @@ build-release
 # file for testing GDB
 project/scripts/hello.elf
 
+openocd.log
 *.vcd
 *.gtkw
 run_testbench

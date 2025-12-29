@@ -346,6 +346,7 @@ module adbg_wb_biu
 */
 
   assign data_o               = data_out_reg;
+  assign err_o                = err_reg;
   assign sb_request_o         = reg_bus_req;
   assign sb_burst_size_o      = 0; // Always single word rw's so burst size is always zero
 
