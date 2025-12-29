@@ -170,15 +170,15 @@ module adbg_or1k_biu
            rdy_sync_tff1 <= 1'b0;
            rdy_sync_tff2 <= 1'b0;
            rdy_sync_tff2q <= 1'b0;
-           rdy_o <= 1'b1; 
+           //rdy_o <= 1'b1; 
 	end
 	else begin  
 	   rdy_sync_tff1 <= rdy_sync;       // Synchronize the ready signal across clock domains
 	   rdy_sync_tff2 <= rdy_sync_tff1;
 	   rdy_sync_tff2q <= rdy_sync_tff2;  // used to detect toggles
 
-	   if(strobe_i && rdy_o) rdy_o <= 1'b0;
-	   else if(rdy_sync_tff2 != rdy_sync_tff2q) rdy_o <= 1'b1;
+	   //if(strobe_i && rdy_o) rdy_o <= 1'b0;
+	   //else if(rdy_sync_tff2 != rdy_sync_tff2q) rdy_o <= 1'b1;
 	end
 
      end 
