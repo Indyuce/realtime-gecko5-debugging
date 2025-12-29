@@ -52,7 +52,7 @@
 \title{Real-time debugging of a soft-core OpenRISC CPU}
 \author{Jules Peyrat}
 \supervisor{Dr. Theo Ties Jan Kluter}
-\adviser{Prof. Paolo Ienne}
+\adviser{Dr. Paolo Ienne}
 
 \newcommand{\sysname}{FooSystem\xspace}
 
@@ -72,11 +72,11 @@ I sincerely thank my project supervisor, Dr. Theo Kluter, for allowing me to wor
 
 \begin{abstract}
 
-The CS-473 course at EPFL uses the Gecko5Education board featuring a soft-core OpenRISC CPU for teaching system-level programming. However, the existing debugging interface designed for the OR1200 processor is not fully compatible with the virtual prototype used in this course, preventing real-time debugging, step-by-step execution...
+The CS-473 course at EPFL uses the Gecko5Education board featuring a soft-core OpenRISC CPU for teaching system-level programming. However, the existing debugging interface designed for the OR1200 processor is not fully compatible with the virtual prototype used in this course, preventing real-time debugging and step-by-step execution.
 
-In our real-time debugging environment, GDB communicates with the GDB RSP server exposed by OpenOCD, which acts as a hardware driver and interfaces with the FPGA's JTAGG terminal. One custom user instruction of this JTAG terminal is connected to the debug controller, which communicates with the CPU and system bus of our SoC through two independent sub-modules.
+This project aims at adapting the Advanced Debug Interface (ADI) to enable GDB-based debugging for the CS-473 CPU. On the software side, we implement a new OpenOCD driver to communicate with the Lattice ECP5 FPGA's native JTAGG hardware primitive, which differs from the soft-core TAP controllers typically used with the ADI. On the hardware side, we refactor the Bus Interface Unit (BIU) of the Wishbone module to interface with the virtual prototype's system bus, enabling memory read and write operations. Adapting the CPU module's BIU and connecting the CPU stall control signals is also required to access the register file, and perform step-by-step execution and breakpoint management.
 
-This project aims at adapting the OR1200 debug interface to enable GDB-based debugging for our soft-core CPU. On the software side, we implement a new OpenOCD driver to communicate with the Lattice ECP5 FPGA's native JTAGG hardware primitive, which differs from the soft-core TAP controllers typically used with the ADI. On the hardware side, we refactor the Bus Interface Unit (BIU) of the Wishbone module to interface with the virtual prototype's system bus, enabling memory read and write operations. Adapting the CPU module's BIU and connecting the CPU stall control signals is also required to access the CPU register file, and perform step-by-step execution and breakpoint management.
+
 
 %The abstract serves as an executive summary of your project. Your abstract should cover at least the following topics, 1-2 sentences for each: what area you are in, the problem you focus on, why existing work is insufficient, what the high-level intuition of your work is, maybe a neat design or implementation decision, and key results of your evaluation.
 
