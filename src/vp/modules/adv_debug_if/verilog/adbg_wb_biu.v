@@ -456,7 +456,7 @@ module adbg_wb_biu
     `STATE_IDLE:
       begin
         rdy_sync_en  <= 1'b0;
-        err_reg      <= rst_i ? 1'b0 : err_reg;
+        err_reg      <= rst_i ? 1'b0  : err_reg;
         data_out_reg <= rst_i ? 32'h0 : data_out_reg;
 
         reg_bus_req <= 1'b0;
@@ -480,10 +480,10 @@ module adbg_wb_biu
         reg_bus_req <= 1'b1; // Request bus access
 
         sb_address_data_o      <= sb_grant_i ? addr_reg : 32'h0;
-        sb_begin_transaction_o <= sb_grant_i ? 1'b1 : 1'b0;
+        sb_begin_transaction_o <= sb_grant_i ? 1'b1     : 1'b0;
         sb_end_transaction_o   <= 1'b0;
-        sb_byte_enables_o      <= sb_grant_i ? 4'b1111 : 4'b0000; // always 4 bytes
-        sb_read_n_write_o      <= sb_grant_i ? ~wr_reg : 1'b0; // read_not_write == ~wr_reg
+        sb_byte_enables_o      <= sb_grant_i ? 4'b1111  : 4'b0000; // always 4 bytes
+        sb_read_n_write_o      <= sb_grant_i ? ~wr_reg  : 1'b0; // read_not_write == ~wr_reg
         sb_data_valid_o        <= 1'b0;
       end
 
@@ -500,7 +500,7 @@ module adbg_wb_biu
 
         sb_address_data_o      <= wr_reg ? data_in_reg : 32'h0;
         sb_begin_transaction_o <= 1'b0;
-        sb_end_transaction_o   <= sb_error_i || (wr_reg && !sb_busy_i) ? 1'b1 : 1'b0; // end transaction if error. TODO writes
+        sb_end_transaction_o   <= sb_error_i || (wr_reg && !sb_busy_i) ? 1'b1 : 1'b0; // end transaction if write or error
         sb_byte_enables_o      <= 4'b0000;
         sb_read_n_write_o      <= 1'b0;
         sb_data_valid_o        <= wr_reg ? 1'b1 : 1'b0; // assert data_valid for writes
