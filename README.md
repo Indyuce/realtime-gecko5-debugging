@@ -1,6 +1,19 @@
+# Realtime debugging on Gecko5 or1k virtual prototype
 
+Custom OpenOCD source available [here](https://github.com/Indyuce/openocd-gecko5)
 
-References
+## File Content
+
+| Folder | Content   |
+|--------|-----------|
+| `src/vp` | Source code of the virtual prototype, and scripts to run OpenOCD and GDB |
+| `report` | Report source code |
+| `notes` | Weekly meeting notes |
+| `docs` | Additional, external documentation (FPGA, OR, ADI, course slides..) |
+| `src/or1ksim` | Source code of an or1k simulator. We thought about using it for tests but it turns out it implements a GDB RSP server directly, so it's impossible to use it alongside OpenOCD. It turned out useless for this project |
+| `src/or1k_programs` | Some programs to try GDB with |
+
+## References (see report for exhaustive list)
 
 - [Antoine Colson's work](https://github.com/nosloc/JTAG_support_for_Gecko5Education) on implementation a JTAG interface for the OR1200 CPU.
 - [OpenOCD User Docs](https://openocd.org/pages/documentation.html). Click hyperlink "PDF" to download
