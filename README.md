@@ -6,7 +6,7 @@ Custom OpenOCD source available [here](https://github.com/Indyuce/openocd-gecko5
 
 | Folder | Content   |
 |--------|-----------|
-| `src/vp` | Source code of the virtual prototype, and scripts to run OpenOCD and GDB |
+| `src/vp` | Source code of the virtual prototype, and scripts to run OpenOCD and GDB. `src/vp/modules/jtag` contains code and testbenches for the up-to-date JTAG interface. `src/vp/modules/jtag_interface` contains the code for the JTAG interface of the last semester project, it is only kept for reference. `src/vp/modules/adv_debug_if` contains Verilog code of the ADI. |
 | `report` | Report source code |
 | `notes` | Weekly meeting notes |
 | `docs` | Additional, external documentation (FPGA, OR, ADI, course slides..) |
