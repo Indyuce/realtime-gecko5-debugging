@@ -94,7 +94,7 @@ However, the CPU used in CS-473 has several architectural differences with the O
 
 The objective of this project is to enable real-time debugging capabilities for the soft-core CPU used in the CS-473 course by adapting an existing OR1200-compatible debug interface \cite{adv_debug_sys}, which will be referred to as the \textit{Advanced Debug Interface}, or ADI.
 
-The core of this work consists in refactoring the ADI originally developed for the OR1200 processor. In order to allow for memory access through GDB, the memory submodule of the ADI must be adapted to the bus architecture employed on the virtual prototype (VP). In order to allow for register access, program breakpoints, and step by step execution, the CPU submodule of the ADI must be refactored.
+The core of this work consists of refactoring the ADI originally developed for the OR1200 processor. In order to allow for memory access through GDB, the memory submodule of the ADI must be adapted to the bus architecture employed on the virtual prototype (VP). In order to allow for register access, program breakpoints, and step by step execution, the CPU submodule of the ADI must be refactored.
 
 On the hardware side, this project leverages the native JTAG primitive provided by the Lattice ECP5 FPGA. Notably, this is the JTAG terminal used to reconfigure the FPGA gates when uploading a program onto the virtual prototype. The debug interface used in this project is designed to work with soft-core JTAG TAP controllers.
 
@@ -104,7 +104,7 @@ The full code of the virtual prototype, testbenches and additional documentation
 
 \section{Report Overview}
 
-The first chapter introduces important background on software used in this project, such as OpenOCD, that will be used as a hardware-software bridge to communicate with the ADI. It also presents the FPGA used in this project, as well as the JTAG standard, used to communicate with the board.
+The first chapter introduces important background on software used in this project, such as OpenOCD, which will be used as a hardware-software bridge to communicate with the ADI. It also presents the FPGA used in this project, as well as the JTAG standard, which is used to communicate with the board.
 
 The second chapter provides key technical implementation details about the OpenOCD driver used to communicate with the debug controller, as well as the Verilog implementation of the debug controller itself.
 
@@ -190,7 +190,7 @@ TAP (\textit{Test Access Port}) controllers are hardware components that softwar
 
 JTAG TAPs all have one internal register called the \textbf{instruction register}. Its size varies with the number of instructions the TAP controller supports. In order for the computer to send payload data (test vector, command...) to the TAP controller, it first needs to load the correct instruction operation code inside the instruction register through an \textbf{IR-scan}. The \textit{opcode} stored inside the IR determines the data register exposed to the computer during subsequent \textbf{DR-scans}.
 
-TAPs all share at least two instructions: \textbf{IDCODE} and \textbf{BYPASS}. When \textbf{BYPASS} is loaded inside the IR, the TDI and TDO lines are connected. This is useful to selectively disable some TAPs, when multiple TAPs are connected in series on the same JTAG chain: this way, the JTAG software bridge can communicate with only a subset of the in-series TAPs. The \textbf{IDCODE} instruction allows to return the 32-bit identification code of the debugged SoC.
+TAPs all share at least two instructions: \textbf{IDCODE} and \textbf{BYPASS}. When \textbf{BYPASS} is loaded inside the IR, the TDI and TDO lines are connected. This is useful to selectively disable some TAPs, when multiple TAPs are connected in series on the same JTAG chain: this way, the JTAG software bridge can communicate with only a subset of the in-series TAPs. The \textbf{IDCODE} instruction allows returning the 32-bit identification code of the debugged SoC.
 
 While \textbf{IDCODE} and \textbf{BYPASS} are generic instructions, TAPs all have instructions that are specific to the FPGA/target architecture. Such instruction codes can be found in the BSD (\textit{Boundary Scan Description}) files of the target architecture. Depending on the number of instructions available on the TAP, the size of the IR may vary. For instance, the Lattice ECP5 FPGA has an \textit{irlen} of 8, and instructions \textbf{ISC\_PROGRAM\_DONE} (\verb|0b01011110|) and \textbf{ISC\_ERASE} (\verb|0b00001110|) are used to reprogram the FPGA gates.
 
@@ -272,13 +272,13 @@ For security, the JTAGG primitive does not provide direct access to the four mai
 
 \section{Advanced Debug System}
 
-The \textit{Advanced Debug System} \cite{adv_debug_sys} project is an open-source soft-core available on OpenCores. It provides several components, including an \textbf{Advanced Debug Interface} (or "ADI"), which is the component in between the JTAG controller and the soft-core SoC, as well as several implementations of \textbf{soft-core JTAG TAP controllers} such as \verb|xilinx|, \verb|mohor|, \verb|actel| or \verb|altera|. We go over the structure of the ADI in the following chapter.
+The \textit{Advanced Debug System} \cite{adv_debug_sys} project is an open-source soft-core available on OpenCores. It provides several components, including an \textbf{Advanced Debug Interface} (or "ADI"), which is the component between the JTAG controller and the soft-core SoC, as well as several implementations of \textbf{soft-core JTAG TAP controllers} such as \verb|xilinx|, \verb|mohor|, \verb|actel| or \verb|altera|. We discuss the structure of the ADI in the following chapter.
 
 According to its documentation, the usual approach is to synthesize a soft-core TAP controller alongside the ADI and to use four FPGA physical pins to emulate a standard JTAG connection (using an USB Blaster for instance). The documentation also mentions the possibility of directly using the hardware JTAG controller already present on the FPGA—typically the one used for gate array reconfiguration—but this option is limited to devices that implement the UJTAG interface, such as those in the ProASIC family.
 
 In this project, we take a slightly different approach: we directly leverage the native JTAG hardware controller available on our Lattice FPGA. As a result, the provided soft-core TAP implementations are used only as reference designs to guide the integration of the Advanced Debug Interface, rather than being instantiated in our final system. Furthermore, we make use of the reference soft-core implementation of the JTAGG primitive provided by Tom Verbeure \cite{verbeure} to help with our ADI refactor.
 
-While using a soft-core TAP controller has the benefit of exposing all raw JTAG signals, using the hardware JTAG primitive of our FPGA along with the existing USB terminal avoids having to setup an additional USB terminal from scratch. In the following chapter, we go over the modifications required to the ADI to adapt to this non-native TAP controller.
+While using a soft-core TAP controller has the benefit of exposing all raw JTAG signals, using the hardware JTAG primitive of our FPGA along with the existing USB terminal avoids having to set up an additional USB terminal from scratch. In the following chapter, we discuss the modifications required to the ADI to adapt to this non-native TAP controller.
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Implementation}
@@ -295,13 +295,13 @@ In order to communicate with our debug controller, OpenOCD needs to know:
     \item the IR opcodes that correspond to our debug controller.
 \end{itemize}
 
-Since our processor is very similar to the OR1200 processor, in order to avoid having to implement both a software driver and a hardware debug controller entirely from scratch, we use one of the OR1200-ready debug interfaces supported by OpenOCD \cite{soc_debug_sys} \cite{adv_debug_sys}, namely the ADI (\textit{Advanced Debug Interface}). Consequently, the DR register sizes and command formats remain the exact same, as they are "embedded" inside the semantics of our ADI driver. The OpenOCD source file of our ADI driver is \verb|or1k_du_adv.c|, and it is not required to modify it.
+Since our processor is very similar to the OR1200 processor, in order to avoid having to implement both a software driver and a hardware debug controller entirely from scratch, we use one of the OR1200-ready debug interfaces supported by OpenOCD \cite{soc_debug_sys} \cite{adv_debug_sys}, namely the ADI (\textit{Advanced Debug Interface}). Consequently, the DR register sizes and command formats remain exactly the same, as they are embedded in the semantics of our ADI driver. The OpenOCD source file of our ADI driver is \verb|or1k_du_adv.c|, and no modification is required.
 
 Since we are using the JTAGG hardware primitive of our Lattice FPGA, we have no choice but to use the JTAGG IR length, which is 8. This number is provided to OpenOCD inside the OpenOCD server config file through the \verb|-irlen| parameter (see figure \ref{fig:openocd_server_config}).
 
 The IR opcodes depend on the TAP controller that we are communicating with. The ADI actually provides three different Verilog implementations of popular TAP controllers, including \textit{Mohor}, \textit{Xilinx} and \textit{Intel}. The user is free to choose what TAP controller to implement alongside the ADI. All of these TAP controllers are supported by the OpenOCD \textit{or1k} driver, and it is the responsibility of the user to specify in the OpenOCD server configuration file which TAP controller is being used by the ADI through the \verb|tap_select| command (see figure \ref{fig:openocd_server_config}). OpenOCD actually has three different JTAG TAP drivers for each of these controllers, all of them being mutually incompatible with one another. 
 
-However, none of these drivers are compatible with the Lattice JTAGG primitive. Consequently, we need to write a new OpenOCD driver that will support it. Fortunately, the amount of changes required relative to the existing \textit{Mohor/OpenCores} TAP driver is very limited. We start with the \textit{Mohor/OpenCores} TAP driver (which source file is \verb|or1k_tap_mohor.c|) and perform the following changes:
+However, none of these drivers are compatible with the Lattice JTAGG primitive. Consequently, we need to write a new OpenOCD driver that will support it. Fortunately, the amount of changes required relative to the existing \textit{Mohor/OpenCores} TAP driver is very limited. We start with the \textit{Mohor/OpenCores} TAP driver (whose source file is \verb|or1k_tap_mohor.c|) and perform the following changes:
 \begin{itemize}
     \item increase its IR length from \verb|4| to \verb|8|,
     \item change the IR opcode of the debug controller from \verb|0x8| to \verb|0x32| to match the first JTAGG user instruction code.
@@ -323,11 +323,11 @@ If we were to only register a "raw" TAP controller in OpenOCD, we could connect 
 
 \subsection{Connecting using Telnet or GDB}
 
-The following command can be used to open a Telnet connection to the OpenOCD server (opened on port 4444), in order to send raw JTAG commands to the ADI:
+The following command can be used to open a Telnet connection to the OpenOCD server (running on port 4444) to send raw JTAG commands to the ADI:
 
 \verb|telnet localhost 4444|
 
-The following command can be used to open a connection to the GDB RSP server (opened by OpenOCD on port 3333), in order to debug the CPU using GDB.
+The following command can be used to open a connection to the GDB RSP server (running on port 3333) to debug the CPU using GDB.
 
 \verb|or1k-elf-gdb hello.elf --eval-command='target remote localhost:3333'|
 
@@ -357,7 +357,7 @@ du_select adv [expr {0}]
 
 \section{Top-Level Debug Controller}
 
-The \verb|adv_debug_if| debug controller is composed of a top-level debug controller with four sub-modules (see figure \ref{fig:adv_debug_sys_scheme}): two sub-modules for each of the CPU cores, one sub-module for accessing the Wishbone system bus, and one sub-module for the JSP server. \textit{The JSP server sub-module is out of the scope of this project - it allows to emulate a Serial connection through our JTAG connection.}
+The \verb|adv_debug_if| debug controller is composed of a top-level debug controller with four sub-modules (see figure \ref{fig:adv_debug_sys_scheme}): two sub-modules for each of the CPU cores, one sub-module for accessing the Wishbone system bus, and one sub-module for the JSP server. \textit{The JSP server sub-module is out of the scope of this project—it allows emulating a serial connection through our JTAG connection.}
 
 \begin{figure}
     \centering
@@ -389,7 +389,7 @@ When OpenOCD receives a memory read (or write) instructed by the user through GD
 
 Intuitively, the first DR-scan provides the address to read (or write to), the number of bytes to read (or write), and the word size. It is always of fixed size (53 bits), and its structure is presented on figure \ref{fig:burst_setup_fmt}. The \textit{Burst Setup} format is the same for reads and writes. The second DR-scan executes the memory read (or write) by either reading words from the Bus Interface Unit (BIU) and transferring them over through the JTAG TDO line, or by shifting in bits from the TDI line and instructing the BIU to write full 32-bit words.
 
-The BIU is the subcomponent of the Wishbone module responsible for interfacing the SoC system bus. Since our SoC does not use the native ADI bus architecture (Wishbone), most of our work will consist in refactoring the state machine of the BIU to have it match our SoC system bus architecture.
+The BIU is the subcomponent of the Wishbone module responsible for interfacing with the SoC system bus. Since our SoC does not use the native ADI bus architecture (Wishbone), most of our work consists of refactoring the state machine of the BIU to match our SoC system bus architecture.
 
 \subsection{Memory Read Example}
 
@@ -488,17 +488,17 @@ In case of a write, our system bus behaves slightly differently. The VP system b
 \subsection{Hi-Speed Mode}
 \label{sec:hispeed_mode}
 
-This chapter goes over an issue encountered while refactoring the original ADI. The OR1200 ADI has two modes for memory burst commands: \textit{Legacy} and \textit{Hi-Speed} mode. In legacy mode, memory read/write bursts transfer an additional status bit for every word transferred over JTAG. In hi-speed mode, memory bursts only provide exactly one status bit at the beginning of the burst DR-scan.
+This section discusses an issue encountered while refactoring the original ADI. The OR1200 ADI has two modes for memory burst commands: \textit{Legacy} and \textit{Hi-Speed} mode. In legacy mode, memory read/write bursts transfer an additional status bit for every word transferred over JTAG. In hi-speed mode, memory bursts only provide exactly one status bit at the beginning of the burst DR-scan.
 
 The user can choose which mode to use by flipping a constant in the RTL specification of the ADI before synthesis. In any case, the option specified in the ADI RTL must match the option provided in the OpenOCD server configuration file, as it alters the JTAG command formats used.
 
-The reason for this status bit is the following. Let's say that we are performing a memory read from the system bus. Recall that the Wishbone BIU implements a basic "best-effort optimistic" protocol for reading/writing to the system bus. For memory reads for instance, while the bits of the previous 32-bit words are transferred through the JTAG line, the BIU requests access to the system bus, waits for a grant from the arbiter, and perform the next single 32-bit word read as soon as bus grant is provided.
+The reason for this status bit is the following. Suppose we are performing a memory read from the system bus. Recall that the Wishbone BIU implements a basic "best-effort optimistic" protocol for reading/writing to the system bus. For memory reads, for instance, while the bits of the previous 32-bit words are transferred through the JTAG line, the BIU requests access to the system bus, waits for a grant from the arbiter, and performs the next single 32-bit word read as soon as bus grant is provided.
 
 In other words, if the system bus is heavily congested, the BIU may not have completed the next 32-bit read by the time the Wishbone top-level module expects to shift out valid data. This is precisely why status bits are included in the returned data. Each status bit is set to 1 if the BIU was ready—that is, if the corresponding single-word read on the system bus actually took place. Conversely, if the status bit is 0, it indicates that the BIU had not yet completed the read, and therefore the bits shifted out during that cycle must be considered garbage.
 
-The \textit{or1k} OpenOCD driver is aware of these status bits, and will retry the full memory read until all status bits are set to 1, until a user-defined threshold.
+The \textit{or1k} OpenOCD driver is aware of these status bits, and will retry the full memory read until all status bits are set to 1, up to a user-defined threshold.
 
-Most of the time, the SoC bus clock (in our case, it is synchronous) is much faster than the JTAG clock, which puts the bottleneck of our JTAG data transmission line at the level of the JTAG TDI/TDO line. In our case, our JTAG controller operates at ~4 MHz while our SoC operates at almost ~80 Mhz. If we only perform 32-bit words, this leaves the BIU \verb|32 * 80 / 4 = 640| bus cycles to perform the next word read. For this reason, Hi-speed mode just optimistically presumes that the BIU never fails to execute bus transactions in time.
+Most of the time, the SoC bus clock (in our case, synchronous) is much faster than the JTAG clock, which makes the JTAG TDI/TDO line the bottleneck of our JTAG data transmission. In our case, the JTAG controller operates at ~4 MHz while the SoC operates at almost ~80 MHz. If we only perform 32-bit words, this leaves the BIU \verb|32 * 80 / 4 = 640| bus cycles to perform the next word read. For this reason, Hi-speed mode just optimistically presumes that the BIU never fails to execute bus transactions in time.
 
 That being said, while the OpenOCD documentation explicitly states the possibility of disabling Hi-speed mode through the use of a config file option, the source code of the ADI driver never modifies the number of bits sent through JTAG depending on the option chosen. \textbf{It seems like the OpenOCD ADI driver is hard-coded to Hi-speed mode.}
 
@@ -506,7 +506,7 @@ While I planned to use Legacy mode for debugging (primarily for making sure that
 
 \section{CPU Module}
 
-The CPU submodule of the ADI is responsible for reading and writing to the CPU register file, step-by-step execution and handling of program breakpoints.
+The CPU submodule of the ADI is responsible for reading and writing to the CPU register file, step-by-step execution, and handling of program breakpoints.
 
 \subsection{Register Read and Writes}
 
@@ -514,9 +514,9 @@ The CPU submodule is structurally very similar to the Wishbone submodule, as pre
 
 \subsection{Future Work}
 
-While step-by-step execution and program breakpoint management was in the scope of this project, I did not have time to start working on these realtime debugging features.
+While step-by-step execution and program breakpoint management were in the scope of this project, I did not have time to start working on these real-time debugging features.
 
-All ADI submodules (CPU, Wishbone, JSP) have internal module registers that can be read from/written to. The CPU submodule contains one single internal register, the \textit{status register}, which is a 2-bit register. One of these bits indicates whether or not the CPU is currently stalled. Writing to this internal register stalls the CPU. Internal registers reads and writes consist in two distinct DR scans. The first DR scan is a \textit{Register Select} command as presented in figure \ref{fig:reg_sel_fmt}. The second DR scan is similar to a burst read. OpenOCD needs to shift in at least as many bits as the size of the internal register. The bits shifted out by the ADI correspond to the current internal register content.
+All ADI submodules (CPU, Wishbone, JSP) have internal module registers that can be read from or written to. The CPU submodule contains a single internal register, the \textit{status register}, which is a 2-bit register. One of these bits indicates whether or not the CPU is currently stalled. Writing to this internal register stalls the CPU. Internal register reads and writes consist of two distinct DR scans. The first DR scan is a \textit{Register Select} command as presented in figure \ref{fig:reg_sel_fmt}. The second DR scan is similar to a burst read. OpenOCD needs to shift in at least as many bits as the size of the internal register. The bits shifted out by the ADI correspond to the current internal register content.
 
 \begin{figure}
     \centering
@@ -550,7 +550,7 @@ The GDB command \verb|p/x <register>| can be used to display the content of a ge
 $3 = 0xdeadbeef
 \end{CodeVerbatim}
 
-Note that after performing at least one memory operation, OpenOCD indefinitely cycles through CPU and Wishbone module. I believe this is due to OpenOCD trying to stall the CPU for step-by-step execution, but since this has not been implemented yet, OpenOCD keeps trying indefinitely.
+Note that after performing at least one memory operation, OpenOCD cycles indefinitely through the CPU and Wishbone modules. I believe this is due to OpenOCD trying to stall the CPU for step-by-step execution, but since this has not been implemented yet, OpenOCD keeps trying indefinitely.
 
 \begin{CodeVerbatim}
 Debug: 409 11536 or1k_du_adv.c:263 adbg_select_module(): Select module: CPU0
@@ -562,7 +562,7 @@ Debug: 412 11637 or1k_du_adv.c:263 adbg_select_module(): Select module: WISHBONE
 
 \subsection{Memory Reads}
 
-The GDB command \verb|x/wx <address>| can be used to read a 32-bit word at the given address in memory. The resulting OpenOCD debug logs are provided in figure \ref{fig:mem_read_output}.
+The GDB command \verb|x/wx <address>| can be used to read a 32-bit word at a given address in memory. The resulting OpenOCD debug logs are provided in figure \ref{fig:mem_read_output}.
 
 \begin{figure}
     \centering
@@ -587,7 +587,7 @@ Debug: 372 [or1k.cpu] {1} sending packet: $a2aa2aae#ae
 
 \section{Testbenches}
 
-Testbenches are provided to test both top-level module selection and memory operations. These testbenches are stored inside the folder \verb|src/vp/modules/jtag/test|. The following testbenches are provided:
+Testbenches are provided to test both top-level module selection and memory operations. These testbenches are stored in the folder \verb|src/vp/modules/jtag/test|. The following testbenches are provided:
 \begin{itemize}
     \item \verb|./tb_select_module.sh| to test top-level submodule selection
     \item \verb|./tb_mem_read.sh| to test Wishbone read/writes.
@@ -601,9 +601,9 @@ Testbenches are provided to test both top-level module selection and memory oper
 \chapter{Future Work}
 %%%%%%%%%%%%%%%%%%%%%%
 
-While the current implementation provides a foundation for real-time debugging our \textit{or1k} CPU, several aspects remain to be addressed in order to achieve full feature completeness.
+While the current implementation provides a foundation for real-time debugging of our \textit{or1k} CPU, several aspects remain to be addressed to achieve full feature completeness.
 
-Regarding memory accesses, the Bus Interface Unit (BIU) was refactored to ensure compatibility with the system bus of the virtual prototype. The lack of bus errors and matching CRC codes for reads indicate that the top-level ADI and JTAG were successfully interfaced. At the moment, writes still spit out CRC errors. Future work should focus on getting this last part of the Wishbone BIU to work, and perform benchmarks to grasp the improvement in upload speed when using JTAG instead of the currently-used Serial connection.
+Regarding memory accesses, the Bus Interface Unit (BIU) was refactored to ensure compatibility with the system bus of the virtual prototype. The lack of bus errors and matching CRC codes for reads indicate that the top-level ADI and JTAG were successfully interfaced. At the moment, writes still produce CRC errors. Future work should focus on getting this last part of the Wishbone BIU to work, and perform benchmarks to assess the improvement in upload speed when using JTAG instead of the currently used serial connection.
 
 Second, register access through the debug interface is not yet fully supported. The BIU within the CPU submodule must still be adapted to connect to the register file. The register file is currently implemented as a simple dual-port memory, with both ports already allocated to the CPU decode stage. One possible solution would be to duplicate the register file in order to provide additional read ports dedicated to debugging purposes.
 
@@ -614,7 +614,7 @@ Finally, advanced debugging features such as single-step execution and breakpoin
 \chapter{Conclusion}
 %%%%%%%%%%%%%%%%%%%%
 
-Given its similarity with the OR1200 CPU, it is possible to implement real-time debugging for our soft-core CPU with limited modifications to our CPU, the \textit{Advanced Debug Interface}, and OpenOCD drivers. While this work focuses on refactoring the BIUs of the CPU and Wishbone modules to adapt them to the virtual prototype SDRAM and register file, some refactoring work is still needed inside the ADI source code to fully support step-by-step execution, register content access, and program breakpoint support.
+Given its similarity to the OR1200 CPU, it is possible to implement real-time debugging for our soft-core CPU with limited modifications to our CPU, the \textit{Advanced Debug Interface}, and OpenOCD drivers. While this work focuses on refactoring the BIUs of the CPU and Wishbone modules to adapt them to the virtual prototype SDRAM and register file, some refactoring work is still needed inside the ADI source code to fully support step-by-step execution, register content access, and program breakpoint support.
 
 %In the conclusion you repeat the main result and finalize the discussion of
 %your project. Mention the core results and why as well as how your system
