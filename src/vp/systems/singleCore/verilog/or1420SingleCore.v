@@ -618,12 +618,11 @@ module or1420SingleCore ( input wire         clock12MHz,
   /*
    * JTAG interface.
    */
-  wire        s_jtagRequestBus, s_jtagBusgranted, s_jtagBeginTransaction;
-  wire        s_jtagEndTransaction, s_jtagDataValid, s_jtagReadNotWrite, s_jtagBusy;
+  wire        s_jtagBusRequest, s_jtagBusGrant, s_jtagBeginTransaction;
+  wire        s_jtagEndTransaction, s_jtagDataValid, s_jtagReadNotWrite;
   wire [3:0]  s_jtagByteEnables;
   wire [7:0]  s_jtagBurstSize;
   wire [31:0] s_jtagAddressData;
-  // TODO OR bus signals
   
   wire [9:0] s_red, s_green, s_blue;
 
@@ -639,22 +638,23 @@ module or1420SingleCore ( input wire         clock12MHz,
     .green(s_green),
     .blue(s_blue),
 
-    // Bus signals (unused atm)
-    .system_clock(s_systemClock),
-    .system_reset(s_reset),
-    .address_dataOUT(s_jtagAddressData),
-    .byte_enablesOUT(s_jtagByteEnables),
-    .burstSizeOUT(s_jtagBurstSize),
-    .read_n_writeOUT(s_jtagReadNotWrite),
-    .begin_transactionOUT(s_jtagBeginTransaction),
-    .end_transactionOUT(s_jtagEndTransaction),
-    .data_validOUT(s_jtagDataValid),
-    .busyOUT(s_jtagBusy),
-    .address_dataIN(s_addressData),
-    .end_transactionIN(s_endTransaction),
-    .data_validIN(s_dataValid),
-    .busyIN(s_busy),
-    .errorIN(s_busError)
+    // Bus signals
+    .sb_clock_i(s_systemClock),
+    .sb_reset_i(s_reset),
+    .sb_grant_i(s_jtagBusGrant),
+    .sb_request_o(s_jtagBusRequest),
+    .sb_address_data_o(s_jtagAddressData),
+    .sb_byte_enables_o(s_jtagByteEnables),
+    .sb_burst_size_o(s_jtagBurstSize),
+    .sb_read_n_write_o(s_jtagReadNotWrite),
+    .sb_begin_transaction_o(s_jtagBeginTransaction),
+    .sb_end_transaction_o(s_jtagEndTransaction),
+    .sb_data_valid_o(s_jtagDataValid),
+    .sb_address_data_i(s_addressData),
+    .sb_end_transaction_i(s_endTransaction),
+    .sb_data_valid_i(s_dataValid),
+    .sb_busy_i(s_busy),
+    .sb_error_i(s_busError)
   );
 
   /*
@@ -669,12 +669,14 @@ module or1420SingleCore ( input wire         clock12MHz,
  assign s_busRequests[30] = s_cpu1IcacheRequestBus;
  assign s_busRequests[29] = s_hdmiRequestBus;
  assign s_busRequests[28] = s_camReqBus;
- assign s_busRequests[27:0] = 28'd0;
+ assign s_busRequests[27] = s_jtagBusRequest;
+ assign s_busRequests[26:0] = 27'd0;
  
  assign s_cpu1DcacheBusAccessGranted = s_busGrants[31];
  assign s_cpu1IcacheBusAccessGranted = s_busGrants[30];
  assign s_hdmiBusgranted             = s_busGrants[29];
  assign s_camAckBus                  = s_busGrants[28];
+ assign s_jtagBusGrant               = s_busGrants[27];
 
  busArbiter arbiter ( .clock(s_systemClock),
                       .reset(s_reset),
@@ -696,16 +698,15 @@ module or1420SingleCore ( input wire         clock12MHz,
    *
    */
  assign s_busError         = s_arbBusError | s_biosBusError | s_uartBusError | s_sdramBusError | s_flashBusError;
- assign s_beginTransaction = s_cpu1BeginTransaction | s_hdmiBeginTransaction | s_camBeginTransaction ;
+ assign s_beginTransaction = s_cpu1BeginTransaction | s_hdmiBeginTransaction | s_camBeginTransaction | s_jtagBeginTransaction ;
  assign s_endTransaction   = s_cpu1EndTransaction | s_arbEndTransaction | s_biosEndTransaction | s_uartEndTransaction |
-                             s_sdramEndTransaction | s_hdmiEndTransaction | s_flashEndTransaction | s_camEndTransaction ;
+                             s_sdramEndTransaction | s_hdmiEndTransaction | s_flashEndTransaction | s_camEndTransaction | s_jtagEndTransaction ;
  assign s_addressData      = s_cpu1AddressData | s_biosAddressData | s_uartAddressData | s_sdramAddressData | s_hdmiAddressData |
-                             s_flashAddressData | s_camAddressData ;
- assign s_byteEnables      = s_cpu1byteEnables | s_hdmiByteEnables | s_camByteEnables ;
- assign s_readNotWrite     = s_cpu1ReadNotWrite | s_hdmiReadNotWrite ;
+                             s_flashAddressData | s_camAddressData | s_jtagAddressData ;
+ assign s_byteEnables      = s_cpu1byteEnables | s_hdmiByteEnables | s_camByteEnables| s_jtagByteEnables ;
+ assign s_readNotWrite     = s_cpu1ReadNotWrite | s_hdmiReadNotWrite | s_jtagReadNotWrite ;
  assign s_dataValid        = s_cpu1DataValid | s_biosDataValid | s_uartDataValid | s_sdramDataValid | s_hdmiDataValid | 
-                             s_flashDataValid | s_camDataValid ;
+                             s_flashDataValid | s_camDataValid | s_jtagDataValid ;
  assign s_busy             = s_sdramBusy ;
- assign s_burstSize        = s_cpu1BurstSize | s_hdmiBurstSize | s_camBurstSize ;
-
+ assign s_burstSize        = s_cpu1BurstSize | s_hdmiBurstSize | s_camBurstSize | s_jtagBurstSize ;
 endmodule

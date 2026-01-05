@@ -99,14 +99,17 @@ module adbg_or1k_biu
    output 	 cpu_we_o;
    input 	 cpu_ack_i;
 
-   reg 		 rdy_o;
+   assign rdy_o = 1'b1; // TEST. ALWAYS READY
+
+   //reg 		 rdy_o;
    reg 		 cpu_stb_o;
 
 
    // Registers
    reg [31:0] 	 addr_reg;
    reg [31:0] 	 data_in_reg;  // dbg->WB
-   reg [31:0] 	 data_out_reg;  // WB->dbg
+   wire [31:0] 	 data_out_reg = 32'hDEAD_BEEF; // DUMMY VALUE
+   //reg [31:0] 	 data_out_reg;  // WB->dbg
    reg 		 wr_reg;
    reg 		 str_sync;  // This is 'active-toggle' rather than -high or -low.
    reg 		 rdy_sync;  // ditto, active-toggle
@@ -167,15 +170,15 @@ module adbg_or1k_biu
            rdy_sync_tff1 <= 1'b0;
            rdy_sync_tff2 <= 1'b0;
            rdy_sync_tff2q <= 1'b0;
-           rdy_o <= 1'b1; 
+           //rdy_o <= 1'b1; 
 	end
 	else begin  
 	   rdy_sync_tff1 <= rdy_sync;       // Synchronize the ready signal across clock domains
 	   rdy_sync_tff2 <= rdy_sync_tff1;
 	   rdy_sync_tff2q <= rdy_sync_tff2;  // used to detect toggles
 
-	   if(strobe_i && rdy_o) rdy_o <= 1'b0;
-	   else if(rdy_sync_tff2 != rdy_sync_tff2q) rdy_o <= 1'b1;
+	   //if(strobe_i && rdy_o) rdy_o <= 1'b0;
+	   //else if(rdy_sync_tff2 != rdy_sync_tff2q) rdy_o <= 1'b1;
 	end
 
      end 
@@ -210,14 +213,14 @@ module adbg_or1k_biu
 
    assign start_toggle = (str_sync_wbff2 != str_sync_wbff2q);
 
-
+/*
    // CPU->dbg data register
    always @ (posedge cpu_clk_i or posedge rst_i)
      begin
 	if(rst_i) data_out_reg <= 32'h0;
 	else if(data_o_en) data_out_reg <= cpu_data_i;
      end
-
+*/
    // Create a toggle-active ready signal to send to the TCK domain
    always @ (posedge cpu_clk_i or posedge rst_i)
      begin

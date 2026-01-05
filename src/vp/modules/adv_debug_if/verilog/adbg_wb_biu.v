@@ -78,7 +78,25 @@ module adbg_wb_biu
    err_o,
    word_size_i,  // 1,2, or 4
 
+   // System bus signals
+  sb_clock_i,
+  sb_request_o,
+  sb_grant_i,
+  sb_address_data_o,
+  sb_byte_enables_o,
+  sb_burst_size_o,
+  sb_read_n_write_o,
+  sb_begin_transaction_o,
+  sb_end_transaction_o,
+  sb_data_valid_o,
+  sb_address_data_i,
+  sb_end_transaction_i,
+  sb_data_valid_i,
+  sb_busy_i,
+  sb_error_i
+
    // Wishbone signals
+   /*
    wb_clk_i,
    wb_adr_o,
    wb_dat_o,
@@ -92,6 +110,7 @@ module adbg_wb_biu
    wb_err_i,
    wb_cti_o,
    wb_bte_o
+   */
    );
 
    // Debug interface signals
@@ -106,7 +125,25 @@ module adbg_wb_biu
    output 	 err_o;
    input [2:0] 	 word_size_i;
 
+  // System bus signals
+  input 	       sb_clock_i;
+  input          sb_grant_i;
+  output         sb_request_o;
+	output  [31:0] sb_address_data_o;
+	output  [3:0]  sb_byte_enables_o;
+	output  [7:0]  sb_burst_size_o;
+	output         sb_read_n_write_o;
+	output         sb_begin_transaction_o;
+	output         sb_end_transaction_o;
+	output         sb_data_valid_o;
+	input  [31:0]  sb_address_data_i;
+	input          sb_end_transaction_i;
+	input          sb_data_valid_i;
+	input          sb_busy_i;
+	input          sb_error_i;
+
    // Wishbone signals
+   /*
    input 	 wb_clk_i;
    output [31:0] wb_adr_o;
    output [31:0] wb_dat_o;
@@ -120,11 +157,20 @@ module adbg_wb_biu
    input 	 wb_err_i;
    output [2:0]  wb_cti_o;
    output [1:0]  wb_bte_o;
+   */
 
    wire [31:0] 	 data_o;
    reg 		 rdy_o;
    wire 	 err_o;
 
+  reg [31:0] sb_address_data_o; 
+  reg [3:0]  sb_byte_enables_o;
+  reg        sb_begin_transaction_o;
+  reg        sb_end_transaction_o;
+  reg        sb_data_valid_o; 
+  reg        sb_read_n_write_o;
+
+  /*
    wire [31:0] 	 wb_adr_o;
    reg 		 wb_cyc_o;
    reg 		 wb_stb_o;
@@ -134,7 +180,7 @@ module adbg_wb_biu
    wire 	 wb_cab_o;
    wire [2:0] 	 wb_cti_o;
    wire [1:0] 	 wb_bte_o;
-
+   */
 
    // Registers
    reg [3:0] 	 sel_reg;
@@ -156,15 +202,14 @@ module adbg_wb_biu
 
 
    // Control Signals
-   reg 		 data_o_en;    // latch wb_data_i
    reg 		 rdy_sync_en;  // toggle the rdy_sync signal, indicate ready to TCK domain
-   reg 		 err_en;       // latch the wb_err_i signal
 
    // Internal signals
    reg [3:0] 	 be_dec;  // word_size and low-order address bits decoded to SEL bits
-   wire 	 start_toggle;  // WB domain, indicates a toggle on the start strobe
-   reg [31:0] 	 swapped_data_i;
-   reg [31:0] 	 swapped_data_out;
+   wire 	     start_toggle;  // WB domain, indicates a toggle on the start strobe
+   reg [31:0]  swapped_data_i;
+   reg [31:0]  swapped_data_out;
+   reg         reg_bus_req; // request sent to arbiter for bus access
 
    //////////////////////////////////////////////////////
    // TCK clock domain
@@ -265,27 +310,28 @@ module adbg_wb_biu
 
    // Create rdy_o output.  Set on reset, clear on strobe (if set), set on input toggle
    always @ (posedge tck_i or posedge rst_i)
-     begin
-	if(rst_i) begin
-           rdy_sync_tff1 <= 1'b0;
-           rdy_sync_tff2 <= 1'b0;
-           rdy_sync_tff2q <= 1'b0;
-           rdy_o <= 1'b1; 
-	end
-	else begin  
-	   rdy_sync_tff1 <= rdy_sync;       // Synchronize the ready signal across clock domains
-	   rdy_sync_tff2 <= rdy_sync_tff1;
-	   rdy_sync_tff2q <= rdy_sync_tff2;  // used to detect toggles
+    begin
+	    if(rst_i) begin
+        rdy_sync_tff1 <= 1'b0;
+        rdy_sync_tff2 <= 1'b0;
+        rdy_sync_tff2q <= 1'b0;
+        rdy_o <= 1'b1; 
+      end
+      else begin  
+        rdy_sync_tff1 <= rdy_sync;       // Synchronize the ready signal across clock domains
+        rdy_sync_tff2 <= rdy_sync_tff1;
+        rdy_sync_tff2q <= rdy_sync_tff2;  // used to detect toggles
 
-	   if(strobe_i && rdy_o) rdy_o <= 1'b0;
-	   else if(rdy_sync_tff2 != rdy_sync_tff2q) rdy_o <= 1'b1;
-	end
+        if(strobe_i && rdy_o) rdy_o <= 1'b0;
+        else if(rdy_sync_tff2 != rdy_sync_tff2q) rdy_o <= 1'b1;
+      end
 
-     end 
+    end 
 
    //////////////////////////////////////////////////////////
    // Direct assignments, unsynchronized
 
+/*
    assign wb_dat_o = data_in_reg;
    assign wb_we_o = wr_reg;
    assign wb_adr_o = addr_reg;
@@ -297,17 +343,23 @@ module adbg_wb_biu
    assign wb_cti_o = 3'h0;
    assign wb_bte_o = 2'h0;
    assign wb_cab_o = 1'b0;
+*/
+
+  assign data_o               = data_out_reg;
+  assign err_o                = err_reg;
+  assign sb_request_o         = reg_bus_req;
+  assign sb_burst_size_o      = 0; // Always single word rw's so burst size is always zero
 
    ///////////////////////////////////////////////////////
    // Wishbone clock domain
 
     // synchronize the start strobe
-    always @ (posedge wb_clk_i or posedge rst_i)
+    always @ (posedge sb_clock_i or posedge rst_i)
 	  begin
 	     if(rst_i) begin
 		str_sync_wbff1 <= 1'b0;
 		str_sync_wbff2 <= 1'b0;
-		str_sync_wbff2q <= 1'b0;      
+		str_sync_wbff2q <= 1'b0;
 	     end
 	     else begin
 		str_sync_wbff1 <= str_sync;
@@ -318,39 +370,26 @@ module adbg_wb_biu
 
    assign start_toggle = (str_sync_wbff2 != str_sync_wbff2q);
 
-   // Error indicator register
-   always @ (posedge wb_clk_i or posedge rst_i)
-     begin
-	if(rst_i) err_reg <= 1'b0;
-	else if(err_en) err_reg <= wb_err_i; 
-     end
-
    // Byte- or word-swap the WB->dbg data, as necessary (combinatorial)
    // We assume bits not required by SEL are don't care.  We reuse assignments
    // where possible to keep the MUX smaller.  (combinatorial)
-   always @ (sel_reg or wb_dat_i)
+   always @ (sel_reg or sb_address_data_i)
      begin
 	case (sel_reg)
-	  4'b1111: swapped_data_out <= wb_dat_i;
-	  4'b0011: swapped_data_out <= wb_dat_i;
-	  4'b1100: swapped_data_out <= {16'h0, wb_dat_i[31:16]};
-	  4'b0001: swapped_data_out <= wb_dat_i;
-	  4'b0010: swapped_data_out <= {24'h0, wb_dat_i[15:8]};
-	  4'b0100: swapped_data_out <= {16'h0, wb_dat_i[31:16]};
-	  4'b1000: swapped_data_out <= {24'h0, wb_dat_i[31:24]};
-	  default: swapped_data_out <= wb_dat_i;  // Shouldn't be possible
+	  4'b1111: swapped_data_out <= sb_address_data_i;
+	  4'b0011: swapped_data_out <= sb_address_data_i;
+	  4'b1100: swapped_data_out <= {16'h0, sb_address_data_i[31:16]};
+	  4'b0001: swapped_data_out <= sb_address_data_i;
+	  4'b0010: swapped_data_out <= {24'h0, sb_address_data_i[15:8]};
+	  4'b0100: swapped_data_out <= {16'h0, sb_address_data_i[31:16]};
+	  4'b1000: swapped_data_out <= {24'h0, sb_address_data_i[31:24]};
+	  default: swapped_data_out <= sb_address_data_i;  // Shouldn't be possible
 	endcase
      end
 
-   // WB->dbg data register
-   always @ (posedge wb_clk_i or posedge rst_i)
-     begin
-	if(rst_i) data_out_reg <= 32'h0;
-	else if(data_o_en) data_out_reg <= swapped_data_out;
-     end
 
    // Create a toggle-active ready signal to send to the TCK domain
-   always @ (posedge wb_clk_i or posedge rst_i)
+   always @ (posedge sb_clock_i or posedge rst_i)
      begin
 	if(rst_i) rdy_sync <= 1'b0;
 	else if(rdy_sync_en) rdy_sync <= ~rdy_sync;
@@ -362,80 +401,112 @@ module adbg_wb_biu
    // to read.  Deals with single-cycle and multi-cycle
    // accesses.
 
-   reg wb_fsm_state;
-   reg next_fsm_state;
+   reg [1:0] wb_fsm_state;
+   reg [1:0] next_fsm_state;
 
-`define STATE_IDLE     1'h0
-`define STATE_TRANSFER 1'h1
+  `define STATE_IDLE     2'd0 // Ready
+  `define STATE_REQUEST  2'd1 // Waiting for bus access
+  `define STATE_TRANSFER 2'd2 // Performing transfer
 
-   // Sequential bit
-   always @ (posedge wb_clk_i or posedge rst_i)
+  // Sequential bit
+   always @ (posedge sb_clock_i or posedge rst_i)
      begin
-	if(rst_i) wb_fsm_state <= `STATE_IDLE;
-	else wb_fsm_state <= next_fsm_state; 
-     end
+    if(rst_i) wb_fsm_state <= `STATE_IDLE;
+    else wb_fsm_state <= next_fsm_state; 
+  end
 
-   // Determination of next state (combinatorial)
-   always @ (wb_fsm_state or start_toggle or wb_ack_i or wb_err_i)
-     begin
-	case (wb_fsm_state)
-          `STATE_IDLE:
-            begin
-               if(start_toggle && !(wb_ack_i || wb_err_i)) next_fsm_state <= `STATE_TRANSFER;  // Don't go to next state for 1-cycle transfer
-               else next_fsm_state <= `STATE_IDLE;
-            end
-          `STATE_TRANSFER:
-            begin
-               if(wb_ack_i || wb_err_i) next_fsm_state <= `STATE_IDLE;
-               else next_fsm_state <= `STATE_TRANSFER;
-            end
-	endcase
-     end
+  // Determination of next state (combinatorial)
+  always @ (*)
+  begin
+    case (wb_fsm_state)
 
-   // Outputs of state machine (combinatorial)
-   // TODO !!!! fix double assignments !!!!
-   always @ (wb_fsm_state or start_toggle or wb_ack_i or wb_err_i or wr_reg)
-     begin
-	rdy_sync_en <= 1'b0;
-	err_en <= 1'b0;
-	data_o_en <= 1'b0;
-	wb_cyc_o <= 1'b0;
-	wb_stb_o <= 1'b0;
-	
-	case (wb_fsm_state)
-          `STATE_IDLE:
-            begin
-               if(start_toggle) begin
-		  wb_cyc_o <= 1'b1;
-		  wb_stb_o <= 1'b1;
-		  if(wb_ack_i || wb_err_i) begin
-                     err_en <= 1'b1;
-                     rdy_sync_en <= 1'b1;
-		  end
-		  
-		  if (wb_ack_i && !wr_reg) begin
-                     data_o_en <= 1'b1;
-		  end
-               end
-            end
+      // In idle state, go to request state on start toggle
+      `STATE_IDLE:
+      begin
+        //if(start_toggle && !(wb_ack_i || sb_error_i)) next_fsm_state <= `STATE_TRANSFER;  // Don't go to next state for 1-cycle transfer
+        //else next_fsm_state <= `STATE_IDLE;
+        if(start_toggle) next_fsm_state <= `STATE_REQUEST;
+        else next_fsm_state <= `STATE_IDLE;
+      end
 
-          `STATE_TRANSFER:
-            begin
-               wb_cyc_o <= 1'b1;
-               wb_stb_o <= 1'b1;
-               if(wb_ack_i) begin
-                  err_en <= 1'b1;
-                  data_o_en <= 1'b1;
-                  rdy_sync_en <= 1'b1;
-               end
-               else if (wb_err_i) begin
-                  err_en <= 1'b1;
-                  rdy_sync_en <= 1'b1;
-               end
-            end
-	endcase
+      // In request state, go to transfer state when granted access
+      // by bus arbiter
+      `STATE_REQUEST:
+      begin
+        if(sb_grant_i) next_fsm_state <= `STATE_TRANSFER;
+        else next_fsm_state <= `STATE_REQUEST;
+      end
 
-     end
+      // In transfer state, go to idle state on ack or error
+      // `STATE_TRANSFER
+      default: 
+      begin
+        if ((sb_data_valid_i && !sb_busy_i) || sb_error_i) next_fsm_state <= `STATE_IDLE;
+        else next_fsm_state <= `STATE_TRANSFER;
+      end
+    endcase
+  end
+
+  // Outputs of state machine
+  always @ (posedge sb_clock_i)
+  begin
+    case (wb_fsm_state)
+
+    // Wait for WB module to start talking to us
+    `STATE_IDLE:
+      begin
+        rdy_sync_en  <= 1'b0;
+        err_reg      <= rst_i ? 1'b0  : err_reg;
+        data_out_reg <= rst_i ? 32'h0 : data_out_reg;
+
+        reg_bus_req <= 1'b0;
+
+        sb_address_data_o      <= 32'h0;
+        sb_begin_transaction_o <= 1'b0;
+        sb_end_transaction_o   <= 1'b0;
+        sb_byte_enables_o      <= 4'b0000;
+        sb_read_n_write_o      <= 1'b0;
+        sb_data_valid_o        <= 1'b0;
+      end
+
+    // Wait for grant. On grant, begin transaction and write important signals
+    // ON transition to TRANSFER state, reset error flag and data reg
+    `STATE_REQUEST:
+      begin
+        rdy_sync_en  <= 1'b0;
+        err_reg      <= err_reg;
+        data_out_reg <= data_out_reg;
+
+        reg_bus_req <= 1'b1; // Request bus access
+
+        sb_address_data_o      <= sb_grant_i ? addr_reg : 32'h0;
+        sb_begin_transaction_o <= sb_grant_i ? 1'b1     : 1'b0;
+        sb_end_transaction_o   <= 1'b0;
+        sb_byte_enables_o      <= sb_grant_i ? 4'b1111  : 4'b0000; // always 4 bytes
+        sb_read_n_write_o      <= sb_grant_i ? ~wr_reg  : 1'b0; // read_not_write == ~wr_reg
+        sb_data_valid_o        <= 1'b0;
+      end
+
+    // In case of read, keep trying to write until busy is unasserted.
+    // In case of write, wait patiently for ack (payload sent on state transition REQUEST->TRANSFER)
+    // `STATE_TRANSFER
+    default:
+      begin
+        rdy_sync_en  <= (sb_error_i || (sb_data_valid_i && !sb_busy_i)) ? 1'b1 : 1'b0;
+        err_reg      <= sb_error_i ? 1'b1 : (~wr_reg && sb_data_valid_i) ? sb_error_i : err_reg;
+        data_out_reg <= ~wr_reg && sb_data_valid_i ? swapped_data_out : data_out_reg;
+
+        reg_bus_req <= 1'b0;
+
+        sb_address_data_o      <= wr_reg ? data_in_reg : 32'h0;
+        sb_begin_transaction_o <= 1'b0;
+        sb_end_transaction_o   <= sb_error_i || (wr_reg && !sb_busy_i) ? 1'b1 : 1'b0; // end transaction if write or error
+        sb_byte_enables_o      <= 4'b0000;
+        sb_read_n_write_o      <= 1'b0;
+        sb_data_valid_o        <= wr_reg ? 1'b1 : 1'b0; // assert data_valid for writes
+      end
+    endcase
+  end
 
 endmodule
 

@@ -15,9 +15,14 @@ ressources
 .DS_Store
 build-release
 *.o
-project/scripts/config.cfg
 
+
+# file for testing GDB
+project/scripts/hello.elf
+
+openocd.log
 *.vcd
+*.gtkw
 run_testbench
 
 or1420SingleCore.bit

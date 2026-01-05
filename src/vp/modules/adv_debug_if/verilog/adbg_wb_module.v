@@ -80,13 +80,26 @@ module adbg_wb_module #(
                        top_inhibit_o,
                        rst_i,
 
+					   wb_operation_o,//DEBUG
+
+						/*
                        // WISHBONE common signals
                        wb_clk_i,
 
                        // WISHBONE master interface
                        wb_adr_o, wb_dat_o, wb_dat_i, wb_cyc_o, wb_stb_o, wb_sel_o,
-                       wb_we_o, wb_ack_i, wb_cab_o, wb_err_i, wb_cti_o, wb_bte_o 
+                       wb_we_o, wb_ack_i, wb_cab_o, wb_err_i, wb_cti_o, wb_bte_o
+					   */
 
+					   // SYSTEM BUS common signals
+					   sb_clock_i,
+					   sb_grant_i,
+					   sb_request_o,
+
+					   // SYSTEM BUS master interface
+					   sb_address_data_o, sb_byte_enables_o, sb_burst_size_o, sb_read_n_write_o,
+					   sb_begin_transaction_o, sb_end_transaction_o, sb_data_valid_o,
+					   sb_address_data_i, sb_end_transaction_i, sb_data_valid_i, sb_busy_i, sb_error_i
 		       );
 
    // JTAG signals
@@ -104,7 +117,27 @@ module adbg_wb_module #(
    output        top_inhibit_o;
    input         rst_i;
 
+   output [3:0]   wb_operation_o;//DEBUG
+
+   // SYSTEM BUS master interface
+    input 	       sb_clock_i;
+	input          sb_grant_i;
+	output         sb_request_o;
+	output  [31:0] sb_address_data_o;
+	output  [3:0]  sb_byte_enables_o;
+	output  [7:0]  sb_burst_size_o;
+	output         sb_read_n_write_o;
+	output         sb_begin_transaction_o;
+	output         sb_end_transaction_o;
+	output         sb_data_valid_o;
+	input  [31:0]  sb_address_data_i;
+	input          sb_end_transaction_i;
+	input          sb_data_valid_i;
+	input          sb_busy_i;
+	input          sb_error_i;
+
    // WISHBONE master interface
+   /*
    input         wb_clk_i;
    output [31:0] wb_adr_o;
    output [31:0] wb_dat_o;
@@ -118,7 +151,8 @@ module adbg_wb_module #(
    input         wb_err_i;
    output [2:0]  wb_cti_o;
    output [1:0]  wb_bte_o;
-   //reg           wb_cyc_o;
+   reg           wb_cyc_o; // why is this a register?
+   */
 
    // Declare inputs / outputs as wires / registers
    reg 		 module_tdo_o;
@@ -346,6 +380,8 @@ module adbg_wb_module #(
 	  operation <= operation_in;
      end
 
+	assign wb_operation_o = operation; // DEBUG
+
    //////////////////////////////////////
      // Bit counter
 
@@ -422,6 +458,24 @@ module adbg_wb_module #(
       .err_o           (biu_err),
       .word_size_i     (word_size_bytes),
 
+	  // System bus signals
+	  .sb_clock_i             (sb_clock_i),
+	  .sb_grant_i             (sb_grant_i),
+	  .sb_request_o		      (sb_request_o),
+	  .sb_address_data_o      (sb_address_data_o),
+	  .sb_byte_enables_o      (sb_byte_enables_o),
+	  .sb_burst_size_o        (sb_burst_size_o),
+	  .sb_read_n_write_o      (sb_read_n_write_o),
+	  .sb_begin_transaction_o (sb_begin_transaction_o),
+	  .sb_end_transaction_o   (sb_end_transaction_o),
+	  .sb_data_valid_o        (sb_data_valid_o),
+	  .sb_address_data_i      (sb_address_data_i),
+	  .sb_end_transaction_i   (sb_end_transaction_i),
+	  .sb_data_valid_i        (sb_data_valid_i),
+	  .sb_busy_i              (sb_busy_i),
+	  .sb_error_i             (sb_error_i)
+
+		/*
       // Wishbone signals
       .wb_clk_i        (wb_clk_i),
       .wb_adr_o        (wb_adr_o),
@@ -436,6 +490,7 @@ module adbg_wb_module #(
       .wb_err_i        (wb_err_i),
       .wb_cti_o        (wb_cti_o),
       .wb_bte_o        (wb_bte_o)
+	  */
       );
 
    /////////////////////////////////////

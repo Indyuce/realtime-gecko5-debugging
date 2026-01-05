@@ -1,3 +1,5 @@
+// NOT IN USE ANYMORE
+
 module jtagg_patch(
 
     input wire JTCK,

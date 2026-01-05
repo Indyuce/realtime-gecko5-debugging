@@ -5,4 +5,4 @@
 #  -f specifies config files to load
 
 OPENOCD=/opt/oss-cad-suite/share/openocd/scripts
-openocd --debug -f configs/interface_ftdi.cfg -f configs/target_or1k.cfg
+openocd --debug -f configs/interface_ftdi.cfg -f configs/target_or1k.cfg -l openocd.log

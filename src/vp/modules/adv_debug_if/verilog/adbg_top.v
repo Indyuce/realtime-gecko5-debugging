@@ -77,6 +77,25 @@ module adbg_top
     // Module select from TAP
     input   debug_select_i,
 
+    // System bus signals
+    input wire         sb_clock_i,
+    input wire         sb_reset_i,
+    input wire         sb_grant_i,
+    output wire        sb_request_o,
+    output wire [31:0] sb_address_data_o,
+    output wire [3:0]  sb_byte_enables_o,
+    output wire [7:0]  sb_burst_size_o,
+    output wire        sb_read_n_write_o,
+    output wire        sb_begin_transaction_o,
+    output wire        sb_end_transaction_o,
+    output wire        sb_data_valid_o,
+    input wire [31:0]  sb_address_data_i,
+    input wire         sb_end_transaction_i,
+    input wire         sb_data_valid_i,
+    input wire         sb_busy_i,
+    input wire         sb_error_i,
+
+    /*
     input   wb_clk_i,
     input   wb_rst_i,
     output [31:0] wb_adr_o,
@@ -91,6 +110,7 @@ module adbg_top
     input         wb_err_i,
     output [2:0]  wb_cti_o,
     output [1:0]  wb_bte_o,
+    */
 
     // CPU signals
     input         cpu0_clk_i,
@@ -157,8 +177,11 @@ always @(posedge tck_i) begin
   shift_dr_i_patch <= shift_dr_i;
 end
 
+wire [3:0] wb_operation_o; // DEBUG
+
 assign red[3:0] = ~module_selects;
-assign red[9:4] = 6'b111111;
+assign red[5:4] = 2'b11;
+assign red[9:6] = ~wb_operation_o;
 assign green = ~(10'b0);
 assign blue  = ~(10'b0);
 
@@ -177,7 +200,6 @@ always @(posedge tck_i) begin
   //  shadow_reg <= input_shift_reg;
   //end
 
-  tdo_o <= 0;
 end
 
 // [end of patch]
@@ -250,6 +272,28 @@ generate
                   .top_inhibit_o     (module_inhibit[`DBG_TOP_WISHBONE_DEBUG_MODULE]),
                   .rst_i            (rst_i),
 
+                  // SYSTEM BUS common signals
+                  .sb_clock_i        (sb_clock_i),
+                  .sb_grant_i        (sb_grant_i),
+                  .sb_request_o      (sb_request_o),
+
+                  .wb_operation_o    (wb_operation_o), // DEBUG
+
+                  // SYSTEM BUS master interface
+                  .sb_address_data_o   (sb_address_data_o),
+                  .sb_byte_enables_o   (sb_byte_enables_o),
+                  .sb_burst_size_o     (sb_burst_size_o),
+                  .sb_read_n_write_o   (sb_read_n_write_o),
+                  .sb_begin_transaction_o (sb_begin_transaction_o),
+                  .sb_end_transaction_o   (sb_end_transaction_o),
+                  .sb_data_valid_o      (sb_data_valid_o),
+                  .sb_address_data_i    (sb_address_data_i),
+                  .sb_end_transaction_i (sb_end_transaction_i),
+                  .sb_data_valid_i     (sb_data_valid_i),
+                  .sb_busy_i           (sb_busy_i),
+                  .sb_error_i          (sb_error_i)
+
+                  /*
                   // WISHBONE common signals
                   .wb_clk_i         (wb_clk_i),
 
@@ -266,6 +310,7 @@ generate
                   .wb_err_i         (wb_err_i),
                   .wb_cti_o         (wb_cti_o),
                   .wb_bte_o         (wb_bte_o)
+                  */
             );
    end
    else
@@ -369,8 +414,8 @@ generate
                   .rst_i            (rst_i),
 
                   // WISHBONE common signals
-                  .wb_clk_i         (wb_clk_i),
-                  .wb_rst_i         (wb_rst_i),
+                  .wb_clk_i         (sb_clock_i), // [patch] "sb_clock_i" instead of "wb_clk_i"
+                  .wb_rst_i         (sb_reset_i), // [patch] "sb_reset_i" instead of "wb_rst_i"
 
                   // WISHBONE master interface
                   .wb_adr_i         (wb_jsp_adr_i),
@@ -399,8 +444,8 @@ assign select_inhibit = |module_inhibit;
 
 /////////////////////////////////////////////////
 // TDO output MUX
-/*
-always @  (input_shift_reg) //(module_id_reg or tdo_wb or tdo_cpu0 or tdo_cpu1 or tdo_jsp)
+
+always @ (module_id_reg or tdo_wb or tdo_cpu0 or tdo_cpu1 or tdo_jsp)
 begin
    case (module_id_reg)
      `DBG_TOP_WISHBONE_DEBUG_MODULE: tdo_o <= tdo_wb;
@@ -409,8 +454,7 @@ begin
      `DBG_TOP_JSP_DEBUG_MODULE:      tdo_o <= tdo_jsp;
      default:                        tdo_o <= 1'b0;
    endcase
-   tdo_o <= input_shift_reg[0];
 end
-*/
+
 
 endmodule

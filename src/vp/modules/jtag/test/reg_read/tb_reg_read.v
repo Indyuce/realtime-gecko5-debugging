@@ -2,30 +2,36 @@
 
 `define SIMULATE 1
 
-module tb_mem_read;
+module tb_reg_read;
     
-    ////////////////////////
+    //////////////////////////////////////////////////////////////////////////
     // JTAG signals
-    ////////////////////////
+    //////////////////////////////////////////////////////////////////////////
     reg TCK;
     reg TMS;
     reg TDI;
     wire TDO;
     
-    ////////////////////////
+    //////////////////////////////////////////////////////////////////////////
     // SoC signals
-    ////////////////////////
+    //////////////////////////////////////////////////////////////////////////
     reg sys_clk;
     reg sys_reset;
 
-    reg sys_wb_ack = 0;
-    reg [31:0] sys_wb_dat_i = 32'd0;
-    reg sys_wb_err = 0;
+    //////////////////////////////////////////////////////////////////////////
+    // Emulated bus & arbiter signals
+    //////////////////////////////////////////////////////////////////////////
+
+
+
+
+    //////////////////////////////////////////////////////////////////////////
+    // DUT
+    //////////////////////////////////////////////////////////////////////////
 
     localparam drlen = 53'd8;
 
-    reg [drlen-1:0] reg_tdo_out;
-    wire [1:0] s_tdo_module_out = reg_tdo_out[1:0];
+    reg [128:0] reg_tdo_out;
 
     // Instantiate DUT
     jtag_if dut (
@@ -34,12 +40,12 @@ module tb_mem_read;
         .TDI(TDI),
         .TDO(TDO),
 
-        .system_clock(sys_clk),
-        .system_reset(sys_reset),
-        .wb_ack_i(sys_wb_ack),
-        .wb_dat_i(sys_wb_dat_i),
-        .wb_err_i(sys_wb_err)
+        // CPU 0 signals
+        .cpu0_clk_i(sys_clk)
     );
+    //////////////////////////////////////////////////////////////////////////
+    // Start of testbench
+    //////////////////////////////////////////////////////////////////////////
 
     // Clock generation : 4ns period
     initial begin
@@ -87,7 +93,7 @@ module tb_mem_read;
     //////////////////////////////////////////////////////////////////////////
     // Perform a DR scan (both read and write)
     //////////////////////////////////////////////////////////////////////////
-    task send_dr(input [63:0] dr_value, input integer dr_len);
+    task send_dr(input [128:0] dr_value, input integer dr_len);
         integer i;
     begin
         reg_tdo_out = 0;
@@ -102,9 +108,7 @@ module tb_mem_read;
         for (i = 0; i < dr_len; i = i + 1) begin
             jtag_clock(i == dr_len - 1, dr_value[i]);
 
-            // TODO probleme avec 
-            //@(negedge TCK);
-            //reg_tdo_out[i] = TDO;
+            reg_tdo_out[i-1] = TDO; // !! SKIP FIRST STATUS BIT !!
         end
         // Terminate sequence
         jtag_clock(1, 0); // -> Update-DR
@@ -139,8 +143,8 @@ module tb_mem_read;
     // Main seq
     //////////////////////////////////////////////////////////////////////////
     initial begin
-        $dumpfile("tb_mem_read.vcd");
-        $dumpvars(0, tb_mem_read);
+        $dumpfile("tb_reg_read.vcd");
+        $dumpvars(0, tb_reg_read);
 
 
         //////////////////////////////////
@@ -166,32 +170,36 @@ module tb_mem_read;
         repeat(10) @(posedge TCK); // Idle
 
         //////////////////////////////////
-        // Select wishbone submodule
+        // Select CPU0 submodule
         //////////////////////////////////
-        send_dr(3'b110, 3);
-        send_dr(3'b100, 3);
+        send_dr(3'b101, 3);
         repeat(10) @(posedge TCK); // Idle
 
+        //////////////////////////////////
+        // Burst setup command
+        //////////////////////////////////
+        // opcode 0x7    = burst read 32-bit words
+        // 16'd1         = read/write 1 word
+        // 32'h0000_1000 = address to read from/write to
+        setup_burst(4'h7, 32'h0000_0000, 16'd1);
+
+        repeat(20) @(posedge sys_clk); // Slave takes some time to respond
 
         //////////////////////////////////
-        // Setup burst read command
+        // Slave returns word read
         //////////////////////////////////
-        // opcode 0x7 = burst read
-        setup_burst(4'h7, 32'h0000_1000, 16'd1);
 
-        @(posedge TCK);
-        repeat(8) @(posedge sys_clk); // Idle
+        repeat(3) @(posedge TCK); // Idle
 
-        @(posedge sys_clk);
-        sys_wb_ack   = 1'b1;
-        sys_wb_dat_i = 32'hDEAD_BEEF;
-        @(posedge sys_clk);
-        sys_wb_ack   = 1'b0;
-        sys_wb_dat_i = 32'h0000_0000;
-
-
+        //////////////////////////////////
+        // Burst-read DR scan
+        //////////////////////////////////
+        send_dr(72'h0, 72); // read 72 bits
 
         repeat(20) @(posedge TCK); // Idle
+
+        // end of test
+
         $finish;
     end
 

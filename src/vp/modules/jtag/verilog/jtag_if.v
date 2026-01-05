@@ -13,27 +13,26 @@ module jtag_if (
     output [9:0] green,
     output [9:0] blue,
 
-    // Bus signals (unused atm)
-    input wire system_clock,
-    input wire system_reset,
-    output wire [31:0] address_dataOUT,
-    output wire [3:0] byte_enablesOUT,
-    output wire [7:0] burstSizeOUT,
-    output wire read_n_writeOUT,
-    output wire begin_transactionOUT,
-    output wire end_transactionOUT,
-    output wire data_validOUT,
-    output wire busyOUT,
-    input wire [31:0] address_dataIN,
-    input wire end_transactionIN,
-    input wire data_validIN,
-    input wire busyIN,
-    input wire errorIN,
+    // System bus signals
+    input wire         sb_clock_i,
+    input wire         sb_reset_i,
+    input wire         sb_grant_i,
+    output wire        sb_request_o,
+    output wire [31:0] sb_address_data_o,
+    output wire [3:0]  sb_byte_enables_o,
+    output wire [7:0]  sb_burst_size_o,
+    output wire        sb_read_n_write_o,
+    output wire        sb_begin_transaction_o,
+    output wire        sb_end_transaction_o,
+    output wire        sb_data_valid_o,
+    input wire [31:0]  sb_address_data_i,
+    input wire         sb_end_transaction_i,
+    input wire         sb_data_valid_i,
+    input wire         sb_busy_i,
+    input wire         sb_error_i,
 
-
-    input wire [31:0] wb_dat_i,
-    input wire        wb_ack_i,
-    input wire        wb_err_i
+    // CPU0 signals
+    input wire        cpu0_clk_i
 );
 
     ///////////////////////////////////////////////////////////////////////
@@ -75,20 +74,27 @@ module jtag_if (
 
     ///////////////////////////////////////////////////////////////////////
     //
-    // Test layer
+    // Latch bus input signals to avoid
+    // long critical paths and retroactive loops
+    // Input signals are not exposed to layers below
     //
     ///////////////////////////////////////////////////////////////////////
 
+    reg         _sb_grant_i;
+    reg [31:0]  _sb_address_data_i;
+    reg         _sb_end_transaction_i;
+    reg         _sb_data_valid_i;
+    reg         _sb_busy_i;
+    reg         _sb_error_i;
 
-    //wire [2:0] select_module_command;
-
-
-
-    wire s_JCAPTURE = s_JCE1 && !s_JSHIFT;
-
-    //assign select_module_command = shadow_reg[35:33];
-
-
+    always @(posedge sb_clock_i) begin
+        _sb_grant_i            <= sb_grant_i;
+        _sb_address_data_i     <= sb_address_data_i;
+        _sb_end_transaction_i  <= sb_end_transaction_i;
+        _sb_data_valid_i       <= sb_data_valid_i;
+        _sb_busy_i             <= sb_busy_i;
+        _sb_error_i            <= sb_error_i;
+    end
 
     ///////////////////////////////////////////////////////////////////////
     //
@@ -116,6 +122,9 @@ module jtag_if (
         .debug_select(s_selectAdbg)
     );
 */
+
+    wire s_JCAPTURE = s_JCE1 && !s_JSHIFT;
+
     /*
      * First interface problem:
      * We need a signal high when 0x32 is loaded in IR.
@@ -140,8 +149,10 @@ module jtag_if (
     ///////////////////////////////////////////////////////////////////////
 
     adbg_top #(
-        .DBG_CPU0_SUPPORTED("NONE"), // TODO
-        .DBG_CPU1_SUPPORTED("NONE"), // TODO
+        //[comment to enable wishbone module]
+        //.DBG_WISHBONE_SUPPORTED("NONE"),
+        //[comment to enable cpu0 module]
+        //.DBG_CPU0_SUPPORTED("NONE"), // TODO
         .DBG_JSP_SUPPORTED("NONE")
     ) adbg_top_impl (
 
@@ -160,66 +171,36 @@ module jtag_if (
         .green(green),
         .blue(blue),
 
-        .wb_clk_i(system_clock),
-        .wb_rst_i(system_reset),
-        .wb_ack_i(wb_ack_i),
-        .wb_dat_i(wb_dat_i),
-        .wb_err_i(1'b0)
+        // System bus signals
+        .sb_clock_i(sb_clock_i),
+        .sb_reset_i(sb_reset_i),
+        .sb_grant_i(_sb_grant_i),
+        .sb_request_o(sb_request_o),
+        .sb_address_data_o(sb_address_data_o),
+        .sb_byte_enables_o(sb_byte_enables_o),
+        .sb_burst_size_o(sb_burst_size_o),
+        .sb_read_n_write_o(sb_read_n_write_o),
+        .sb_begin_transaction_o(sb_begin_transaction_o),
+        .sb_end_transaction_o(sb_end_transaction_o),
+        .sb_data_valid_o(sb_data_valid_o),
+        .sb_address_data_i(_sb_address_data_i),
+        .sb_end_transaction_i(_sb_end_transaction_i),
+        .sb_data_valid_i(_sb_data_valid_i),
+        .sb_busy_i(_sb_busy_i), // busy signal should be ready BEFORE positive clock edge
+        .sb_error_i(_sb_error_i),
 
-/*
-    //input   wb_clk_i,
-    //input   wb_rst_i,
-    output [31:0] wb_adr_o,
-    output [31:0] wb_dat_o,
-    //input [31:0]  wb_dat_i,
-    output        wb_cyc_o,
-    output        wb_stb_o,
-    output [3:0]  wb_sel_o,
-    output        wb_we_o,
-    //input         wb_ack_i,
-    output        wb_cab_o,
-    //input         wb_err_i,
-    output [2:0]  wb_cti_o,
-    output [1:0]  wb_bte_o,
+        // CPU signals
+        .cpu0_clk_i(cpu0_clk_i),
+        //.cpu0_addr_o(),
+        .cpu0_data_i(32'b0),
+        //.cpu0_data_o(),
+        .cpu0_bp_i(1'b0),
+        //.cpu0_stall_o(),
+        //.cpu0_stb_o(),
+        //.cpu0_we_o(),
+        .cpu0_ack_i(1'b0)
+        //.cpu0_rst_o(),
 
-    // CPU signals
-    input         cpu0_clk_i,
-    output [31:0] cpu0_addr_o,
-    input [31:0]  cpu0_data_i,
-    output [31:0] cpu0_data_o,
-    input         cpu0_bp_i,
-    output        cpu0_stall_o,
-    output        cpu0_stb_o,
-    output        cpu0_we_o,
-    input         cpu0_ack_i,
-    output        cpu0_rst_o,
-
-
-    input         cpu1_clk_i,
-    output [31:0] cpu1_addr_o,
-    input [31:0]  cpu1_data_i,
-    output [31:0] cpu1_data_o,
-    input         cpu1_bp_i,
-    output        cpu1_stall_o,
-    output        cpu1_stb_o,
-    output        cpu1_we_o,
-    input         cpu1_ack_i,
-    output        cpu1_rst_o,
-
-    input [31:0]  wb_jsp_adr_i,
-    output [31:0] wb_jsp_dat_o,
-    input [31:0]  wb_jsp_dat_i,
-    input         wb_jsp_cyc_i,
-    input         wb_jsp_stb_i,
-    input [3:0]   wb_jsp_sel_i,
-    input         wb_jsp_we_i,
-    output        wb_jsp_ack_o,
-    input         wb_jsp_cab_i,
-    output        wb_jsp_err_o,
-    input [2:0]   wb_jsp_cti_i,
-    input [1:0]   wb_jsp_bte_i,
-    output        int_o
-*/
     );
 
     
