@@ -326,6 +326,7 @@ In the OpenOCD server config presented in figure \ref{fig:openocd_server_config}
 If we were to only register a "raw" TAP controller in OpenOCD, we could connect to the OpenOCD server and send raw JTAG commands through a Telnet client. By associating this TAP controller to an \textit{or1k} CPU, we tell OpenOCD to interpret this JTAG terminal as a debuggable CPU. As a result, it opens a GDB RSP server instead, that we can connect to using GDB.
 
 \subsection{Connecting using Telnet or GDB}
+\label{sec:gdb_command}
 
 The following command can be used to open a Telnet connection to the OpenOCD server (running on port 4444) to send raw JTAG commands to the ADI:
 
@@ -375,6 +376,7 @@ The top-level debug controller receives 53-bit commands from the JTAG TAP. The M
 Even though the DR input register of the top-level ADI is 53 bits long, OpenOCD actually only needs to shift in 3 bits. When communicating with the top-level, the MSB is always set to 1, indicating a module selection command. This bit is followed by the 2 bits identifying the module to be selected. If the MSB is set to 0, then the command has to be 53 bits long exactly, and it will be dispatched to the currently selected submodule.
 
 \subsection{TDI 1-Cycle Delay Problem}
+\label{sec:tdi_pb}
 
 In order to avoid long critical paths, the JTAGG primitive latches the input signal TDI, making the JTDI signal one cycle late. If no modification is done to the current implementation of the debug controller input shift register logic, the LSB of the JTAG command will be garbage, and the MSB will be lost.
 
@@ -564,14 +566,19 @@ Debug: 412 11637 or1k_du_adv.c:263 adbg_select_module(): Select module: WISHBONE
 ....
 \end{CodeVerbatim}
 
+
 \subsection{Memory Reads}
 
-The GDB command \verb|x/wx <address>| can be used to read a 32-bit word at a given address in memory. The resulting OpenOCD debug logs are shown in figure \ref{fig:mem_read_output}.
+The GDB command \verb|x/wx <address>| can be used to read a 32-bit word at a given address in memory. The resulting OpenOCD debug logs are shown in figure \ref{fig:mem_read_output} for 32-bit aligned and unaligned reads.
+
+The top figure presents a 4-byte aligned 32-bit (full word) memory read. Since it is aligned, it is properly interpreted as a single burst read on the bus. On the bottom figure however, we can see than the OpenOCD \textit{or1k} driver splits up an unaligned 32-bit read into three distinct reads: two 1-byte reads at \verb|0x401| and \verb|0x404| with \verb|byte_enables| masks of \verb|0b0100| and \verb|0b1000| respectively, and one 2-byte read at \verb|0x402| with mask \verb|0b0011|.
+
+This is done accordingly to the memory alignment specifications provided in the OR 1000 architecture manual \cite{or1000_arch_manual}. Indeed, the 32-bit OR 1000 architecture does not support unaligned 4-byte (full word) reads.
 
 \begin{figure}
-    \centering
 
-\begin{CodeVerbatim}
+    \begin{subfigure}[t]{\textwidth}
+        \begin{CodeVerbatim}
 Debug: 361 [or1k.cpu] {1} received packet: m400,4
 Debug: 362 addr: 0x0000000000000400, len: 0x00000004
 Debug: 363 reading buffer of 4 byte at 0x00000400
@@ -581,12 +588,70 @@ Debug: 366 Select module: WISHBONE
 Debug: 367 Doing burst read, word size 4, word count 1, start address 0x00000400
 Debug: 370 CRC OK!
 Debug: 372 [or1k.cpu] {1} sending packet: $a2aa2aae#ae
-\end{CodeVerbatim}
+        \end{CodeVerbatim}
+        \caption{Aligned 32-bit Memory Read}
+        \label{fig:mem_read_a}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
 
-    \caption{Trying to perform a memory read}
+    \begin{subfigure}[t]{\textwidth}
+\begin{CodeVerbatim}
+Debug: 1284 [or1k.cpu] {1} received packet: m401,4
+Debug: 1285 addr: 0x0000000000000401, len: 0x00000004
+Debug: 1286 reading buffer of 4 byte at 0x00000401
+Debug: 1287 Read memory at 0x00000401, size: 1, count: 0x00000001
+Debug: 1288 Reading WB8 at 0x00000401
+Debug: 1289 Doing burst read, word size 1, word count 1, start address 0x00000401
+Debug: 1292 CRC OK!
+Debug: 1294 Read memory at 0x00000402, size: 2, count: 0x00000001
+Debug: 1295 Reading WB16 at 0x00000402
+Debug: 1296 Doing burst read, word size 2, word count 1, start address 0x00000402
+Debug: 1299 CRC OK!
+Debug: 1301 Read memory at 0x00000404, size: 1, count: 0x00000001
+Debug: 1302 Reading WB8 at 0x00000404
+Debug: 1303 Doing burst read, word size 1, word count 1, start address 0x00000404
+Debug: 1306 CRC OK!
+Debug: 1308 [or1k.cpu] {1} sending packet: $44004546#9b
+        \end{CodeVerbatim}
+        \caption{Unaligned 32-bit Memory Read}
+        \label{fig:mem_read_output_unaligned}
+    \end{subfigure}
+
+    \caption{Memory Reads}
     \label{fig:mem_read_output}
 \end{figure}
 
+
+
+\subsection{Memory Writes}
+
+The GDB command \verb|set {int}0x<address> = <value>| can be used to write a 32-bit word value to a specific address in memory. The output of such command is provided on figure \ref{fig:write_bug}.
+
+At the moment, memory writes still suffer from CRC errors. A plausible cause is the reoccurrence of the issue described in \ref{sec:tdi_pb}. While this issue was fixed for the top-level input register, the Wishbone submodule and its own CRC submodule still utilize this input line.
+
+Testbenches do reproduce this issue, as the data stored in the \verb|data_in_reg| (internal register that stores data to be written to the system bus) does not match the data written by OpenOCD. Then, since the CRC module inputs utilize the TDI input line, these need to be refactored too. The testbench provided does not actually check the CRC or data provided back to OpenOCD through the TDO line.
+
+\textit{Burst Setups} function correctly because they are first stored in the top-level input shift register (where TDI timing is corrected), then forwarded to the corresponding submodule. \textit{Burst Reads} function properly as they do not utilize the TDI input line, unlike \textit{Burst Writes} which use the TDI line to read data payload and compute CRC.
+
+\begin{figure}
+    \centering
+\begin{CodeVerbatim}
+Debug: 356 addr: 0x400, len: 0x00000004
+Debug: 357 writing buffer of 4 byte at 0x00000400
+Debug: 358 Write memory at 0x00000400, size: 4, count: 0x00000001
+Debug: 359 Writing WB32 at 0x00000400
+Debug: 360 Select module: WISHBONE
+Debug: 361 Doing burst write, word size 4, word count 1,start address 0x00000400
+Warn : 362 CRC ERROR! match bit after write is 0 (computed CRC 0xe5a59fe0)
+Warn : 363 CRC ERROR! match bit after write is 0 (computed CRC 0xe5a59fe0)
+Warn : 364 CRC ERROR! match bit after write is 0 (computed CRC 0xe5a59fe0)
+Debug: 365 Reporting -4 to GDB as generic error
+Debug: 366 [or1k.cpu] {1} sending packet: $E0E#ba
+\end{CodeVerbatim}
+    \caption{Writing a full word to memory}
+    \label{fig:write_bug}
+\end{figure}
 
 
 \section{Testbenches}
@@ -597,7 +662,32 @@ Testbenches are provided to test both top-level module selection and memory oper
     \item \verb|./tb_mem_read.sh| to test Wishbone read/writes.
 \end{itemize}
 
-%\section{Benchmarks}
+\section{Benchmarks}
+
+\subsection{Upload Speed}
+
+One key feature of GDB coupled with a debug interface is the ability to upload programs to the target platform. Currently, in order to upload a program to the virtual prototype, we need to use a Serial graphical interface such as CuteCom to write the program directly into RAM over a serial UART connection. As Serial UART connections are known to be particularly slow, we would like to use JTAG instead to benefit from higher upload speeds. The \verb|load| GDB command can be used to upload the provided program to the target RAM. The program to be uploaded is the one provided in the GDB run command (see section \ref{sec:gdb_command}).
+
+Figure \ref{fig:uploading_prog_theoret} shows the output of a \verb|load| command with CRC checks commented out in OpenOCD. Due to a bug in the current implementation of the debug interface, writes do not work yet (and yield CRC errors). However, it is safe to assume that disabling CRC checks has very limited influence on software overhead (and therefore benchmark results). Program upload speed depends on the JTAG clock, ADI mode (hi-speed or legacy), bus availability, and OpenOCD software overhead.
+
+Using GDB and the debug interface for uploading programs, with a JTAG clock of 4MHz, we achieve \textbf{a program upload speed of 420KB/s}. We can compare this value to our Serial connection with baud rate 115200, which translates to at most 15KB/s with no overhead. The same "Hello World" program takes $<0.1$s to upload using GDB and $\approx 1.8s$ to upload using CuteCom.
+
+Note that it is not particularly useful to further crank up the JTAG clock speed, as upload latencies are already very limited, and because our BIU optimistic design assumes that our system bus is always available on time. Increasing the JTAG clock could break this assumption and lead to OpenOCD having to try memory writes again.
+
+\begin{figure}
+    \centering
+    \begin{CodeVerbatim}
+(gdb) load
+Loading section .vectors, size 0x184 lma 0x0
+Loading section .text, size 0x200c lma 0x184
+Loading section .rodata, size 0x16c lma 0x2190
+Loading section .eh_frame, size 0x54 lma 0x22fc
+Start address 0x00000100, load size 9040
+Transfer rate: 420 KB/sec, 2260 bytes/write.
+    \end{CodeVerbatim}
+    \caption{Uploading a program through GDB (4MHz JTAG)}
+    \label{fig:uploading_prog_theoret}
+\end{figure}
 
 % add benchmarks if time allows
 
@@ -607,9 +697,9 @@ Testbenches are provided to test both top-level module selection and memory oper
 
 While the current implementation provides a foundation for real-time debugging of our \textit{or1k} CPU, several aspects remain to be addressed to achieve full feature completeness.
 
-Regarding memory accesses, the Bus Interface Unit (BIU) was refactored to ensure compatibility with the system bus of the virtual prototype. The lack of bus errors and matching CRC codes for reads indicate that the top-level ADI and JTAG were successfully interfaced. At the moment, writes still produce CRC errors. Future work should focus on completing this last part of the Wishbone BIU, and perform benchmarks to assess the improvement in upload speed when using JTAG instead of the currently used serial connection.
+Regarding memory accesses, the Bus Interface Unit (BIU) was refactored to ensure compatibility with the system bus of the virtual prototype. The lack of bus errors and matching CRC codes for reads indicate that the top-level ADI and JTAG were successfully interfaced. At the moment, writes still produce CRC errors due to a mishandling of the TDI input line inside the Wishbone module. Future work should focus on fixing the Wishbone module and validate program uploading.
 
-Second, register access through the debug interface is not yet fully supported. The BIU within the CPU submodule must still be adapted to connect to the register file. The register file is currently implemented as a simple dual-port memory, with both ports already allocated to the CPU decode stage. One possible solution would be to duplicate the register file in order to provide additional read ports dedicated to debugging purposes.
+Second, GPR access through the debug interface is not yet fully supported. The BIU within the CPU submodule must still be adapted to connect to the register file. The register file is currently implemented as a simple dual-port memory, with both ports already allocated to the CPU decode stage. One possible solution would be to duplicate the register file in order to provide additional read ports dedicated to debugging purposes.
 
 Finally, advanced debugging features such as single-step execution and breakpoint management have not yet been implemented. These mechanisms require tight integration with the CPU control logic and pipeline stages, and represent a natural continuation of this work.
 
