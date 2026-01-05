@@ -91,7 +91,7 @@ module tb_mem_read;
 
     localparam drlen = 53'd8;
     localparam SIMULATE_BUS_ERROR = 1'b0; // set to 1 to simulate slave-triggered bus error
-    localparam SIMULATE_WRITE     = 1'b0; // set to 1 to simulate normal read operation
+    localparam SIMULATE_WRITE     = 1'b1; // set to 1 to simulate normal read operation
 
     reg [128:0] reg_tdo_out;
 
@@ -273,7 +273,7 @@ module tb_mem_read;
                 // concurrently write
                 begin
                     // TODO replace by real CRC
-                    send_dr({ 1'b0, 32'hDEAD_BEEF, 32'h0, 1'b0 }, 66); // write 66 bits
+                    send_dr({ 1'b0, 32'hDEAD_BEEF, 32'he5a59fe0, 1'b0 }, 66); // write 66 bits
                 end
 
                 // concurrently wait for grant

@@ -182,6 +182,8 @@ module adbg_wb_biu
    wire [1:0] 	 wb_bte_o;
    */
 
+   //reg [31:0] test_counter = 32'd0;
+
    // Registers
    reg [3:0] 	 sel_reg;
    reg [31:0] 	 addr_reg;  // Don't really need the two LSB, this info is in the SEL bits
@@ -456,6 +458,7 @@ module adbg_wb_biu
     `STATE_IDLE:
       begin
         rdy_sync_en  <= 1'b0;
+        //test_counter <= test_counter;
         err_reg      <= rst_i ? 1'b0  : err_reg;
         data_out_reg <= rst_i ? 32'h0 : data_out_reg;
 
@@ -474,6 +477,7 @@ module adbg_wb_biu
     `STATE_REQUEST:
       begin
         rdy_sync_en  <= 1'b0;
+        //test_counter <= test_counter;
         err_reg      <= err_reg;
         data_out_reg <= data_out_reg;
 
@@ -482,7 +486,7 @@ module adbg_wb_biu
         sb_address_data_o      <= sb_grant_i ? addr_reg : 32'h0;
         sb_begin_transaction_o <= sb_grant_i ? 1'b1     : 1'b0;
         sb_end_transaction_o   <= 1'b0;
-        sb_byte_enables_o      <= sb_grant_i ? 4'b1111  : 4'b0000; // always 4 bytes
+        sb_byte_enables_o      <= sb_grant_i ? sel_reg  : 4'b0000; // sel_reg is byte_enables
         sb_read_n_write_o      <= sb_grant_i ? ~wr_reg  : 1'b0; // read_not_write == ~wr_reg
         sb_data_valid_o        <= 1'b0;
       end
@@ -493,7 +497,8 @@ module adbg_wb_biu
     default:
       begin
         rdy_sync_en  <= (sb_error_i || (sb_data_valid_i && !sb_busy_i)) ? 1'b1 : 1'b0;
-        err_reg      <= sb_error_i ? 1'b1 : (~wr_reg && sb_data_valid_i) ? sb_error_i : err_reg;
+        //test_counter <= (sb_error_i || (sb_data_valid_i && !sb_busy_i)) ? test_counter + 1 : test_counter;
+        err_reg      <= sb_error_i ? 1'b1 : (~wr_reg && sb_data_valid_i) ? 1'b0 : err_reg;
         data_out_reg <= ~wr_reg && sb_data_valid_i ? swapped_data_out : data_out_reg;
 
         reg_bus_req <= 1'b0;
